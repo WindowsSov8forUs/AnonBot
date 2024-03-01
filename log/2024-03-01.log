@@ -1,0 +1,252 @@
+2024-03-01 00:15:58 - anonbot - INFO - Initializing AnonBot
+2024-03-01 00:15:58 - anonbot.internal.driver.abstract - DEBUG - Driver(type='general+websocket+flask+httpx', adapters=1, bots=0) 成功注册 adapter Satori
+2024-03-01 00:15:59 - anonbot.internal.processor.processor - TRACE - 创建新的事件处理器：Processor(type=<EventType.MESSAGE_CREATED: 'message-created'>, module=plugins.echo, lineno=5)
+2024-03-01 00:15:59 - loader - INFO - Succeeded to load plugin echo from plugins.echo
+2024-03-01 00:15:59 - anonbot.internal.driver.abstract - DEBUG - Adapters Loaded: Satori
+2024-03-01 00:15:59 - anonbot.driver.general - INFO - 应用启动成功
+2024-03-01 00:15:59 - anonbot.adapter.satori.adapter - DEBUG - WebSocket connected to ws://bot.kasumibot.cn:39306/v1/events
+2024-03-01 00:15:59 - anonbot.adapter.satori.adapter - INFO - Bot 3662854527 connected to chronocat
+2024-03-01 00:15:59 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:15:59 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:15:59 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:16:02 - anonbot.driver.general - INFO - 应用退出中...
+2024-03-01 00:16:08 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:16:08 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:16:08 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:16:12 - anonbot.driver.general - INFO - 应用退出成功
+2024-03-01 00:16:17 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:16:17 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:16:17 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:18:52 - anonbot - INFO - Initializing AnonBot
+2024-03-01 00:18:52 - anonbot.internal.driver.abstract - DEBUG - Driver(type='general+websocket+flask+httpx', adapters=1, bots=0) 成功注册 adapter Satori
+2024-03-01 00:18:52 - anonbot.internal.processor.processor - TRACE - 创建新的事件处理器：Processor(type=<EventType.MESSAGE_CREATED: 'message-created'>, module=plugins.echo, lineno=5)
+2024-03-01 00:18:52 - loader - INFO - Succeeded to load plugin echo from plugins.echo
+2024-03-01 00:18:52 - anonbot.internal.driver.abstract - DEBUG - Adapters Loaded: Satori
+2024-03-01 00:18:52 - anonbot.driver.general - INFO - 应用启动成功
+2024-03-01 00:18:53 - anonbot.adapter.satori.adapter - DEBUG - WebSocket connected to ws://bot.kasumibot.cn:39306/v1/events
+2024-03-01 00:18:53 - anonbot.adapter.satori.adapter - INFO - Bot 3662854527 connected to chronocat
+2024-03-01 00:18:53 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:18:53 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:18:53 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:18:56 - anonbot.driver.general - INFO - 应用退出中...
+2024-03-01 00:19:02 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:19:02 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:19:02 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:19:06 - anonbot.driver.general - INFO - 应用退出成功
+2024-03-01 00:19:11 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:19:11 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:19:11 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:19:20 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:19:20 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:19:20 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:19:29 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:19:29 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:19:29 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:19:38 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:19:38 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:19:38 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:19:47 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:19:47 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:19:47 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:19:56 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:19:56 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:19:56 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:20:05 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:20:05 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:20:05 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:20:14 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:20:14 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:20:14 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:20:23 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:20:23 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:20:23 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:20:32 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:20:32 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:20:32 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:20:41 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:20:41 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:20:41 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:20:50 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:20:50 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:20:50 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:20:59 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:20:59 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:20:59 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:21:08 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:21:08 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:21:08 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:21:17 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:21:17 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:21:17 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:21:26 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:21:26 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:21:26 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:21:35 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:21:35 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:21:35 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:21:44 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:21:44 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:21:44 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:21:53 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:21:53 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:21:53 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:22:02 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:22:02 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:22:02 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:22:11 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:22:11 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:22:11 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:22:20 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:22:20 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:22:20 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:22:29 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:22:29 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:22:29 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:22:38 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:22:38 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:22:38 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:22:47 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:22:47 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:22:47 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:22:56 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:22:56 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:22:56 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:23:05 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:23:05 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:23:05 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:23:14 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:23:14 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:23:14 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:23:23 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:23:23 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:23:23 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:23:32 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:23:32 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:23:32 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:23:41 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:23:41 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:23:41 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:23:50 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:23:50 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:23:50 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:23:59 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:23:59 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:23:59 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:24:08 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:24:08 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:24:08 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:24:17 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:24:17 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:24:17 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:24:26 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:24:26 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:24:26 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:24:35 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:24:35 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:24:35 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:24:44 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:24:44 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:24:44 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:24:53 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:24:53 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:24:53 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:25:02 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:25:02 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:25:02 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:25:11 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:25:11 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:25:11 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:45:27 - anonbot - INFO - Initializing AnonBot
+2024-03-01 00:45:28 - anonbot.internal.driver.abstract - DEBUG - Driver(type='general+websocket+flask+httpx', adapters=1, bots=0) 成功注册 adapter Satori
+2024-03-01 00:45:28 - anonbot.internal.processor.processor - TRACE - 创建新的事件处理器：Processor(type=<EventType.MESSAGE_CREATED: 'message-created'>, module=plugins.echo, lineno=5)
+2024-03-01 00:45:28 - loader - INFO - Succeeded to load plugin echo from plugins.echo
+2024-03-01 00:45:28 - anonbot.internal.driver.abstract - DEBUG - Adapters Loaded: Satori
+2024-03-01 00:45:28 - anonbot.driver.general - INFO - 应用启动成功
+2024-03-01 00:46:17 - anonbot - INFO - Initializing AnonBot
+2024-03-01 00:46:17 - anonbot.internal.driver.abstract - DEBUG - Driver(type='general+websocket+flask+httpx', adapters=1, bots=0) 成功注册 adapter Satori
+2024-03-01 00:46:17 - anonbot.internal.processor.processor - TRACE - 创建新的事件处理器：Processor(type=<EventType.MESSAGE_CREATED: 'message-created'>, module=plugins.echo, lineno=5)
+2024-03-01 00:46:17 - loader - INFO - Succeeded to load plugin echo from plugins.echo
+2024-03-01 00:46:18 - anonbot.internal.driver.abstract - DEBUG - Adapters Loaded: Satori
+2024-03-01 00:46:18 - anonbot.driver.general - INFO - 应用启动成功
+2024-03-01 00:50:06 - anonbot - INFO - Initializing AnonBot
+2024-03-01 00:50:07 - anonbot.internal.driver.abstract - DEBUG - Driver(type='general+websocket+flask+httpx', adapters=1, bots=0) 成功注册 adapter Satori
+2024-03-01 00:50:07 - anonbot.internal.processor.processor - TRACE - 创建新的事件处理器：Processor(type=<EventType.MESSAGE_CREATED: 'message-created'>, module=plugins.echo, lineno=5)
+2024-03-01 00:50:07 - loader - INFO - Succeeded to load plugin echo from plugins.echo
+2024-03-01 00:50:07 - anonbot.internal.driver.abstract - DEBUG - Adapters Loaded: Satori
+2024-03-01 00:50:07 - anonbot.driver.general - INFO - 应用启动成功
+2024-03-01 00:50:07 - anonbot.adapter.satori.adapter - DEBUG - WebSocket connected to ws://bot.kasumibot.cn:39306/v1/events
+2024-03-01 00:50:07 - anonbot.adapter.satori.adapter - INFO - Bot 3662854527 connected to chronocat
+2024-03-01 00:50:07 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:50:07 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:50:07 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:50:11 - anonbot.driver.general - INFO - 应用退出中...
+2024-03-01 00:50:12 - anonbot.driver.general - INFO - 应用退出成功
+2024-03-01 00:52:57 - anonbot - INFO - Initializing AnonBot
+2024-03-01 00:52:58 - anonbot.internal.driver.abstract - DEBUG - Driver(type='general+websocket+flask+httpx', adapters=1, bots=0) 成功注册 adapter Satori
+2024-03-01 00:52:58 - anonbot.internal.processor.processor - TRACE - 创建新的事件处理器：Processor(type=<EventType.MESSAGE_CREATED: 'message-created'>, module=plugins.echo, lineno=5)
+2024-03-01 00:52:58 - loader - INFO - Succeeded to load plugin echo from plugins.echo
+2024-03-01 00:52:58 - anonbot.internal.driver.abstract - DEBUG - Adapters Loaded: Satori
+2024-03-01 00:52:58 - anonbot.driver.general - INFO - 应用启动成功
+2024-03-01 00:52:58 - anonbot.adapter.satori.adapter - DEBUG - WebSocket connected to ws://bot.kasumibot.cn:39306/v1/events
+2024-03-01 00:52:58 - anonbot.adapter.satori.adapter - INFO - Bot 3662854527 connected to chronocat
+2024-03-01 00:52:58 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 00:52:59 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 00:52:59 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 00:53:02 - anonbot.driver.general - INFO - 应用退出中...
+2024-03-01 00:53:02 - anonbot.driver.general - INFO - 应用退出成功
+2024-03-01 09:15:04 - anonbot - INFO - Initializing AnonBot
+2024-03-01 09:15:05 - anonbot.internal.driver.abstract - DEBUG - Driver(type='general+websocket+flask+httpx', adapters=1, bots=0) 成功注册 adapter Satori
+2024-03-01 09:15:05 - anonbot.internal.processor.processor - TRACE - 创建新的事件处理器：Processor(type=<EventType.MESSAGE_CREATED: 'message-created'>, module=plugins.echo, lineno=5)
+2024-03-01 09:15:05 - loader - INFO - Succeeded to load plugin echo from plugins.echo
+2024-03-01 09:15:05 - anonbot.internal.driver.abstract - DEBUG - Adapters Loaded: Satori
+2024-03-01 09:15:05 - anonbot.driver.general - INFO - 应用启动成功
+2024-03-01 09:15:26 - anonbot.adapter.satori.adapter - ERROR - Error while connecting to WebSocket ws://bot.kasumibot.cn:39306/v1/events
+Traceback (most recent call last):
+  File "f:\VS Code File\anonbot\anonbot\adapter\satori\adapter.py", line 142, in ws
+    with self.websocket(request) as ws:
+  File "C:\Users\qwert\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "f:\VS Code File\anonbot\anonbot\internal\adapter\adapter.py", line 83, in websocket
+    with self.driver.websocket(setup) as websocket:
+  File "C:\Users\qwert\AppData\Local\Programs\Python\Python311\Lib\contextlib.py", line 137, in __enter__
+    return next(self.gen)
+           ^^^^^^^^^^^^^^
+  File "f:\VS Code File\anonbot\anonbot\driver\websocket.py", line 47, in websocket
+    ws = create_connection(
+         ^^^^^^^^^^^^^^^^^^
+  File "C:\Users\qwert\AppData\Local\Programs\Python\Python311\Lib\site-packages\websocket\_core.py", line 610, in create_connection
+    websock.connect(url, **options)
+  File "C:\Users\qwert\AppData\Local\Programs\Python\Python311\Lib\site-packages\websocket\_core.py", line 251, in connect
+    self.sock, addrs = connect(url, self.sock_opt, proxy_info(**options),
+                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\qwert\AppData\Local\Programs\Python\Python311\Lib\site-packages\websocket\_http.py", line 129, in connect
+    sock = _open_socket(addrinfo_list, options.sockopt, options.timeout)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\qwert\AppData\Local\Programs\Python\Python311\Lib\site-packages\websocket\_http.py", line 196, in _open_socket
+    raise error
+  File "C:\Users\qwert\AppData\Local\Programs\Python\Python311\Lib\site-packages\websocket\_http.py", line 184, in _open_socket
+    sock.connect(address)
+TimeoutError: [WinError 10060] 由于连接方在一段时间后没有正确答复或连接的主机没有反应，连接尝试失败。
+
+2024-03-01 09:15:40 - anonbot.driver.general - INFO - 应用退出中...
+2024-03-01 09:15:40 - anonbot.driver.general - INFO - 应用退出成功
+2024-03-01 09:47:54 - anonbot - INFO - Initializing AnonBot
+2024-03-01 09:47:54 - anonbot.internal.driver.abstract - DEBUG - Driver(type='general+websocket+flask+httpx', adapters=1, bots=0) 成功注册 adapter Satori
+2024-03-01 09:47:55 - anonbot.internal.processor.processor - TRACE - 创建新的事件处理器：Processor(type=<EventType.MESSAGE_CREATED: 'message-created'>, module=plugins.echo, lineno=5)
+2024-03-01 09:47:55 - loader - INFO - Succeeded to load plugin echo from plugins.echo
+2024-03-01 09:47:55 - anonbot.internal.driver.abstract - DEBUG - Adapters Loaded: Satori
+2024-03-01 09:47:55 - anonbot.driver.general - INFO - 应用启动成功
+2024-03-01 09:47:55 - anonbot.adapter.satori.adapter - DEBUG - WebSocket connected to ws://127.0.0.1:8192/v1/events
+2024-03-01 09:47:55 - anonbot.adapter.satori.adapter - INFO - Bot 3662854527 connected to chronocat
+2024-03-01 09:47:55 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 09:47:55 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 09:47:55 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 09:48:04 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 09:48:04 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 09:48:04 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 09:48:13 - anonbot.adapter.satori.adapter - TRACE - Heartbeat at None
+2024-03-01 09:48:13 - anonbot.adapter.satori.adapter - TRACE - Received payload: PongPayload(op=<Opcode.PONG: 2>, body=None)
+2024-03-01 09:48:13 - anonbot.adapter.satori.adapter - TRACE - Pong
+2024-03-01 09:48:16 - anonbot.driver.general - INFO - 应用退出中...
+2024-03-01 09:48:16 - anonbot.driver.general - INFO - 应用退出成功
