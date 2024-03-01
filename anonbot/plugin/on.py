@@ -33,7 +33,7 @@ def store_processor(processor: Type[Processor]) -> None:
         processor (Type[Processor]): 事件处理器
     '''
     if plugin_chain := _current_plugin_chain.get():
-        plugin_chain[-1].processor.add(processor)
+        plugin_chain[-1].processors.add(processor)
 
 def get_processor_source(depth: int = 1) -> Optional[ProcessorSource]:
     '''获取事件处理器定义源码信息
