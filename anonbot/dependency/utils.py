@@ -105,13 +105,5 @@ def check_field_type(field: ParameterField, value: Any) -> Any:
     try:
         type_: Any = Annotated[field.type_, field.field_info]
         return TypeAdapter(type_).validate_python(value)
-    except Exception as e:
-        print(value)
-        print(get_args(field.type_))
-        traceback = ''.join(format_exception(
-            type(e),
-            e,
-            e.__traceback__
-        ))
-        print(f'{e.__class__.__name__}: \n{traceback}')
+    except:
         raise TypeMisMatch(field, value)

@@ -129,6 +129,7 @@ def run(*args: Any, **kwargs: Any) -> None:
 
 from anonbot.plugin import on as on
 from anonbot.plugin import on_type as on_type
+from anonbot.plugin import require as require
 from anonbot.plugin import on_regex as on_regex
 from anonbot.plugin import on_command as on_command
 from anonbot.plugin import on_keyword as on_keyword

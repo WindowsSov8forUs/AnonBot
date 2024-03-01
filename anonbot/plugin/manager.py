@@ -16,6 +16,7 @@ from anonbot.utils import path_to_module_name
 from .model import Plugin, PluginMetadata
 from . import (
     _managers,
+    _plugin_load_chain,
     _current_plugin_chain,
     _new_plugin,
     _revert_plugin,
@@ -118,7 +119,8 @@ class PluginManager:
     
     def load_plugin(self, name: str) -> Optional[Plugin]:
         '''加载指定插件'''
-        
+        print('loading plugin:', name)
+        _load_token = _plugin_load_chain.set(())
         try:
             if name in self.plugins:
                 module = importlib.import_module(name)
@@ -135,10 +137,21 @@ class PluginManager:
                 plugin := getattr(module, '__plugin__', None)
             ) is None or not isinstance(plugin, Plugin):
                 raise RuntimeError(f'Module {module.__name__} is not loaded as a plugin!')
-            logger.info(
-                f'Succeeded to load plugin {plugin.name} from {plugin.module_name}',
-                name='loader'
-            )
+            
+            # 处理插件的依赖关系
+            print('loaded plugin:', plugin.name)
+            loaded_plugins = _plugin_load_chain.get()
+            for loaded_plugin in loaded_plugins:
+                loaded_plugin.child_plugins.add(plugin)
+                plugin.parent_plugins.add(loaded_plugin)
+            
+            if not plugin.loaded:
+                logger.info(
+                    f'Succeeded to load plugin [cyan]{plugin.name}[/cyan]',
+                    name='loader'
+                )
+                plugin.loaded = True
+            
             return plugin
         except Exception as exception:
             logger.error(
@@ -146,6 +159,8 @@ class PluginManager:
                 exception=exception,
                 name='loader'
             )
+        finally:
+            _plugin_load_chain.reset(_load_token)
     
     def load_all_plugins(self) -> set[Plugin]:
         '''加载所有可用插件'''
@@ -199,14 +214,8 @@ class PluginLoader(SourceFileLoader):
         plugin = _new_plugin(self.name, module, self.manager)
         setattr(module, '__plugin__', plugin)
         
-        parent_plugins = _current_plugin_chain.get()
-        for pre_plugin in reversed(parent_plugins):
-            if _managers.index(pre_plugin.manager) < _managers.index(self.manager):
-                plugin.parent_plugin = pre_plugin
-                pre_plugin.sub_plugins.add(plugin)
-                break
-        
-        _plugin_token = _current_plugin_chain.set(parent_plugins + (plugin,))
+        loaded_plugins = _current_plugin_chain.get()
+        _plugin_token = _current_plugin_chain.set(loaded_plugins + (plugin,))
         
         try:
             super().exec_module(module)
@@ -215,7 +224,6 @@ class PluginLoader(SourceFileLoader):
             raise
         finally:
             _current_plugin_chain.reset(_plugin_token)
-        
         metadata: Optional[PluginMetadata] = getattr(module, '__plugin_meta__', None)
         plugin.metadata = metadata
         

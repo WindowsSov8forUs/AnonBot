@@ -66,7 +66,6 @@ def EventToMe() -> bool:
     return Depends(_event_to_me)
 
 def _command(state: StateType) -> Message:
-    print('command:', state[PREFIX_KEY][CMD_KEY])
     return state[PREFIX_KEY][CMD_KEY]
 
 def Command() -> str:

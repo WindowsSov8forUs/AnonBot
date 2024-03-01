@@ -39,10 +39,12 @@ class Plugin:
     '''模块路径'''
     manager: 'PluginManager'
     '''导入该插件的插件管理器'''
+    loaded: bool = False
+    '''是否已经加载'''
     processor: set[Type[Processor]] = field(default_factory=set)
     '''插件加载时定义的 `Processor`'''
-    parent_plugin: Optional['Plugin'] = None
-    '''父插件'''
-    sub_plugins: set['Plugin'] = field(default_factory=set)
+    parent_plugins: set['Plugin'] = field(default_factory=set)
+    '''父插件集合'''
+    child_plugins: set['Plugin'] = field(default_factory=set)
     '''子插件集合'''
     metadata: Optional[PluginMetadata] = None

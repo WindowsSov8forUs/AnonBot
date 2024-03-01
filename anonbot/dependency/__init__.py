@@ -79,7 +79,6 @@ class Dependent(Generic[R]):
             self.check(**kwargs)
             
             values = self.solve(**kwargs)
-            print('values: ', values)
             return cast(Callable[..., R], self.call)(**values)
         except:
             raise
@@ -176,5 +175,4 @@ class Dependent(Generic[R]):
         values = gather(
             *((self._solve_field, (field, params)) for field in self.params)
         )
-        print(values)
         return {field.name: value for field, value in zip(self.params, values)}

@@ -10,7 +10,9 @@ _managers: list['PluginManager'] = []
 _current_plugin_chain: ContextVar[Tuple['Plugin', ...]] = ContextVar(
     '_current_plugin_chain', default=()
 )
-_plugin_stack: list['Plugin'] = []
+_plugin_load_chain: ContextVar[Tuple['Plugin', ...]] = ContextVar(
+    '_plugin_load_chain', default=()
+)
 
 def _module_name_to_plugin_name(module_name: str) -> str:
     return module_name.rsplit('.', 1)[-1]
@@ -29,8 +31,8 @@ def _revert_plugin(plugin: 'Plugin') -> None:
     if plugin.name not in _plugins:
         raise RuntimeError('Plugin not found!')
     del _plugins[plugin.name]
-    if parent_plugin := plugin.parent_plugin:
-        parent_plugin.sub_plugins.remove(plugin)
+    for parent_plugin in plugin.parent_plugins:
+        parent_plugin.child_plugins.remove(plugin)
 
 def get_plugin(name: str) -> Optional['Plugin']:
     '''获取已经导入的某个插件'''
@@ -58,6 +60,7 @@ from .manager import PluginManager
 from .on import on_type as on_type
 from .model import Plugin as Plugin
 from .on import on_regex as on_regex
+from .load import require as require
 from .on import on_command as on_command
 from .on import on_keyword as on_keyword
 from .on import on_endswith as on_endswith
