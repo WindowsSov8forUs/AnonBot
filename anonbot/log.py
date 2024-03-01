@@ -47,6 +47,14 @@ levels = {
     'OFF': 100
 }
 
+def link(text: str, url: str) -> str:
+    '''生成链接文本'''
+    return f'[link={url}]{text}[/link]'
+
+def colored(text: str, color: str) -> str:
+    '''生成颜色文本'''
+    return f'[{color}]{text}[/{color}]'
+
 def _get_time() -> str:
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 

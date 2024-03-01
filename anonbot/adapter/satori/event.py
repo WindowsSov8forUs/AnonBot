@@ -5,6 +5,7 @@ from typing import TYPE_CHECKING, Any, Self, Type, Union, TypeVar, Optional
 
 from pydantic import model_validator
 
+from anonbot.log import link
 from anonbot.adapter import Event as BaseEvent
 
 from .element import parse
@@ -19,7 +20,21 @@ from .models import (
     Button,
     Channel,
     EventType,
+    ChannelType,
     InnerMember
+)
+from .message import (
+    Text,
+    At,
+    Sharp,
+    A,
+    Img,
+    Audio,
+    Video,
+    File,
+    Author,
+    Quote,
+    Button as ButtonMessage
 )
 
 E = TypeVar('E', bound='Event')
@@ -105,7 +120,7 @@ class Event(BaseEvent, SatoriEvent):
     
     @override
     def get_event_description(self) -> str:
-        return str(self.model_dump())
+        return str(self.model_dump(exclude_none=True, exclude_unset=True))
     
     @override
     def get_message(self) -> Message:
@@ -358,6 +373,61 @@ class MessageEvent(Event):
 @register_event_class
 class MessageCreatedEvent(MessageEvent):
     __type__ = EventType.MESSAGE_CREATED
+    
+    @override
+    def get_log_string(self) -> str:
+        log_string = ''
+        
+        # 添加来源信息
+        from_infos = []
+        user = self.get_user()
+        channel = self.get_channel()
+        if guild := self.guild:
+            if guild.id != channel.id:
+                from_infos.append(f'{guild.name}({guild.id})')
+        if channel.type != ChannelType.DIRECT:
+            from_infos.append(f'{channel.name}({channel.id})')
+        from_infos.append(f'{user.name}({user.id})')
+        log_string += '-'.join(from_infos)
+        
+        # 添加消息信息
+        messages: list[str] = []
+        for segment in self.get_message():
+            if isinstance(segment, (Text, A)):
+                messages.append(segment.data['text'].replace('\r', ''))
+            elif isinstance(segment, At):
+                if segment.data.get('type', None) is None and segment.data.get('role', None) is None:
+                    messages.append(f'@{segment.data.get("name", None)}({segment.data.get("id", None)}) ')
+                elif segment.data.get('type', None) is not None:
+                    if (type := segment.data.get('type', None)) != 'all':
+                        messages.append(f'@{type} ')
+                    else:
+                        messages.append('@全体成员 ')
+                else:
+                    messages.append(f'@{segment.data.get("role", None)} ')
+            elif isinstance(segment, Sharp):
+                messages.append(f'#{segment.data.get("id", None)}({segment.data["id"]}) ')
+            elif isinstance(segment, Img):
+                messages.append(f'[图片]{segment.data["src"]}')
+            elif isinstance(segment, Audio):
+                messages.append(f'[音频]{segment.data["src"]}')
+            elif isinstance(segment, Video):
+                messages.append(f'[视频]{segment.data["src"]}')
+            elif isinstance(segment, File):
+                messages.append(f'[文件]{segment.data["src"]}')
+            elif isinstance(segment, Message):
+                messages.append('[转发消息]')
+            elif isinstance(segment, Author):
+                messages.append(f'[{segment.data.get("name", None)}({segment.data.get("id", None)})]')
+            elif isinstance(segment, Quote):
+                messages.append(f'[回复]')
+            elif isinstance(segment, ButtonMessage):
+                messages.append(f'[按钮]')
+            else:
+                messages.append(str(segment))
+        log_string += ': ' + ''.join(messages)
+        
+        return log_string
 
 @register_event_class
 class MessageUpdatedEvent(MessageEvent):
@@ -366,6 +436,11 @@ class MessageUpdatedEvent(MessageEvent):
 @register_event_class
 class MessageDeletedEvent(MessageEvent):
     __type__ = EventType.MESSAGE_DELETED
+    
+    @override
+    def get_event_description(self) -> str:
+        user_info = f'{self.user.name}({self.user.id})'
+        return f'{user_info}撤回了一条消息: {self.message_id}'
 
 class ReactionEvent(Event):
     channel: Channel
