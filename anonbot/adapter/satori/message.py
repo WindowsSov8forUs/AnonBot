@@ -21,7 +21,7 @@ class MessageSegment(BaseMessageSegment['Message']):
                 return f' {key}'
             if value is False:
                 return f' no-{key}'
-            return f' {key}="{escape(value), True}"'
+            return f' {key}="{escape(value, True)}"'
         
         attrs = ''.join(_attr(k, v) for k, v in self.data.items())
         if self.type == 'text' and 'text' in self.data:
