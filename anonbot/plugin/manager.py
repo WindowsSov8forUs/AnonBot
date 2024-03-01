@@ -119,7 +119,6 @@ class PluginManager:
     
     def load_plugin(self, name: str) -> Optional[Plugin]:
         '''加载指定插件'''
-        print('loading plugin:', name)
         _load_token = _plugin_load_chain.set(())
         try:
             if name in self.plugins:
@@ -139,7 +138,6 @@ class PluginManager:
                 raise RuntimeError(f'Module {module.__name__} is not loaded as a plugin!')
             
             # 处理插件的依赖关系
-            print('loaded plugin:', plugin.name)
             loaded_plugins = _plugin_load_chain.get()
             for loaded_plugin in loaded_plugins:
                 loaded_plugin.child_plugins.add(plugin)

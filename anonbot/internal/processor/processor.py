@@ -164,6 +164,7 @@ class Processor(metaclass=ProcessorMeta):
     )
     
     def __init__(self) -> None:
+        self.handlers = self.handlers.copy()
         self.state = self._default_state.copy()
     
     def __repr__(self) -> str:

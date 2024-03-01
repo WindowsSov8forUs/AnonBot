@@ -81,15 +81,12 @@ def _run_processor(
             Processor.destroy()
     
     processor = Processor()
-    
-    exception = None
 
     try:
         logger.debug(f'Running processor: {Processor}')
         processor.run(bot, event, state, stack, dependency_cache)
     except Exception as e:
         logger.error(f'Error occurred while running processor: {Processor}', exception=e)
-        exception = e
     
     if processor.block:
         raise StopPropagation
