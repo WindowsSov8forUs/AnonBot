@@ -4,6 +4,7 @@ import signal
 from time import sleep
 from typing_extensions import override
 
+from anonbot import console
 from anonbot import threading
 from anonbot.log import logger
 from anonbot.config import Config
@@ -64,6 +65,7 @@ class Driver(BaseDriver):
             logger.error('Lifespan 启动失败', exception=exception)
         
         logger.info('应用启动成功')
+        console.run(self)
     
     def _main_thread(self) -> None:
         while not self.should_exit.is_set():
