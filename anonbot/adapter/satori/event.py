@@ -388,11 +388,11 @@ class MessageCreatedEvent(MessageEvent):
         if channel.type != ChannelType.DIRECT:
             from_infos.append(f'{channel.name}({channel.id})')
         from_infos.append(f'{user.name}({user.id})')
-        log_string += '-'.join(from_infos)
+        log_string += '-'.join(from_infos) + ': '
         
         # 添加消息信息
         messages: list[str] = []
-        for segment in self.get_message():
+        for segment in self.original_message:
             if isinstance(segment, (Text, A)):
                 messages.append(segment.data['text'].replace('\r', ''))
             elif isinstance(segment, At):
@@ -420,12 +420,12 @@ class MessageCreatedEvent(MessageEvent):
             elif isinstance(segment, Author):
                 messages.append(f'[{segment.data.get("name", None)}({segment.data.get("id", None)})]')
             elif isinstance(segment, Quote):
-                messages.append(f'[回复]')
+                messages.append(f'[回复] ')
             elif isinstance(segment, ButtonMessage):
                 messages.append(f'[按钮]')
             else:
                 messages.append(str(segment))
-        log_string += ': ' + ''.join(messages)
+        log_string += ''.join(messages)
         
         return log_string
 
