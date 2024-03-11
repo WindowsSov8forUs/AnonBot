@@ -24,7 +24,7 @@ class _SchedulerTask(Generic[R]):
 
     参数:
         func (Callable[..., R]): 要执行的函数
-        trigger (Literal['interval', 'corn']): 触发器类型
+        trigger (Literal['interval', 'cron']): 触发器类型
         id (Optional[str]): 任务 ID，默认为函数名称
         max_instance (int): 最大实例数，默认为 `0` 即无上限
     '''
@@ -32,7 +32,7 @@ class _SchedulerTask(Generic[R]):
     def __init__(
         self,
         func: Callable[..., R],
-        trigger: Literal['interval', 'corn'],
+        trigger: Literal['interval', 'cron'],
         *,
         id: Optional[str] = None,
         max_instance: int = 0
@@ -74,22 +74,21 @@ class _SchedulerTask(Generic[R]):
                     return
                 continue
             _time = datetime.now()
-            if self.max_instance:
-                if len(self._threads) >= self.max_instance:
-                    logger.warn(
-                        f'定时任务 {self.id} 实例数已达上限，'
-                        f'将在 {(_time + timedelta(seconds=interval)).strftime("%Y-%m-%d %h:%M:%S")} 时再次尝试执行。'
-                    )
-                    continue
-            
-            Thread(target=self._run, daemon=True).start()
+            if self.max_instance and len(self._threads) >= self.max_instance:
+                logger.warn(
+                    f'定时任务 {self.id} 实例数已达上限，'
+                    f'将在 {(_time + timedelta(seconds=interval)).strftime("%Y-%m-%d %H:%M:%S")} 时再次尝试执行。'
+                )
+            else:
+                Thread(target=self._run, daemon=True).start()
+            sleep(interval - 0.5)
     
     def run_cron(
         self,
         *,
-        second: Optional[Tuple[int]] = None,
-        minute: Optional[Tuple[int]] = None,
-        hour: Optional[Tuple[int]] = None
+        second: Optional[Tuple[int, ...]] = None,
+        minute: Optional[Tuple[int, ...]] = None,
+        hour: Optional[Tuple[int, ...]] = None
     ) -> None:
         def _ensure_cron() -> bool:
             now = datetime.now()
@@ -99,7 +98,7 @@ class _SchedulerTask(Generic[R]):
                 hour is not None and now.hour in hour
             ))
         
-        def _get_next(target: Tuple[int], now: int) -> int:
+        def _get_next(target: Tuple[int, ...], now: int) -> int:
             for value in sorted(target):
                 if value > now:
                     return value
@@ -109,41 +108,61 @@ class _SchedulerTask(Generic[R]):
             if self.cancelled:
                 return
             now = datetime.now()
+            next: datetime = now + timedelta(seconds=1)  # 给 next 变量一个默认值
             if all((second is None, minute is None, hour is None)):
                 logger.warn(f'定时任务 {self.id} 未设置任何触发时间，将不会执行。')
                 return
             while not _ensure_cron():
                 if second is not None:
-                    sleep(0.5)
+                    next = now.replace(second=_get_next(second, now.second))
+                    if next < now:
+                        next = next + timedelta(minutes=1)
                 elif minute is not None:
-                    sleep(30)
+                    next = now.replace(minute=_get_next(minute, now.minute), second=0)
+                    if next < now:
+                        next = next + timedelta(hours=1)
                 elif hour is not None:
-                    sleep(1800)
+                    next = now.replace(hour=_get_next(hour, now.hour), minute=0, second=0)
+                    if next < now:
+                        next = next + timedelta(days=1)
+                sleep((next - datetime.now()).total_seconds())
                 if self.cancelled:
                     return
                 continue
-            if self.max_instance:
-                if len(self._threads) >= self.max_instance:
-                    now = datetime.now()
-                    next: datetime = now
-                    if second is not None:
-                        next = now.replace(second=_get_next(second, now.second))
-                        if next < now:
-                            next = next + timedelta(minutes=1)
-                    elif minute is not None:
-                        next = now.replace(minute=_get_next(minute, now.minute), second=0)
-                        if next < now:
-                            next = next + timedelta(hours=1)
-                    elif hour is not None:
-                        next = now.replace(hour=_get_next(hour, now.hour), minute=0, second=0)
-                        if next < now:
-                            next = next + timedelta(days=1)
-                    logger.warn(
-                        f'定时任务 {self.id} 实例数已达上限，'
-                        f'将在 {next.strftime("%Y-%m-%d %h:%M:%S")} 时再次尝试执行。'
-                    )
-                    continue
-            Thread(target=self._run, daemon=True).start()
+            if self.max_instance and len(self._threads) >= self.max_instance:
+                now = datetime.now()
+                next: datetime = now
+                if second is not None:
+                    next = now.replace(second=_get_next(second, now.second))
+                    if next < now:
+                        next = next + timedelta(minutes=1)
+                elif minute is not None:
+                    next = now.replace(minute=_get_next(minute, now.minute), second=0)
+                    if next < now:
+                        next = next + timedelta(hours=1)
+                elif hour is not None:
+                    next = now.replace(hour=_get_next(hour, now.hour), minute=0, second=0)
+                    if next < now:
+                        next = next + timedelta(days=1)
+                logger.warn(
+                    f'定时任务 {self.id} 实例数已达上限，'
+                    f'将在 {next.strftime("%Y-%m-%d %H:%M:%S")} 时再次尝试执行。'
+                )
+            else:
+                Thread(target=self._run, daemon=True).start()
+            if second is not None:
+                next = now.replace(second=_get_next(second, now.second))
+                if next < now:
+                    next = next + timedelta(minutes=1)
+            elif minute is not None:
+                next = now.replace(minute=_get_next(minute, now.minute), second=0)
+                if next < now:
+                    next = next + timedelta(hours=1)
+            elif hour is not None:
+                next = now.replace(hour=_get_next(hour, now.hour), minute=0, second=0)
+                if next < now:
+                    next = next + timedelta(days=1)
+            sleep((next - datetime.now()).total_seconds())
 
     def cancel(self) -> bool:
         '''取消定时任务'''
@@ -183,12 +202,12 @@ class Scheduler:
     def _add_job(
         self,
         func: Callable[..., None],
-        trigger: Literal['interval', 'corn'],
+        trigger: Literal['interval', 'cron'],
         *,
         id: Optional[str] = None,
-        second: Optional[Union[int, Tuple[int]]] = None,
-        minute: Optional[Union[int, Tuple[int]]] = None,
-        hour: Optional[Union[int, Tuple[int]]] = None,
+        second: Optional[Union[int, Tuple[int, ...]]] = None,
+        minute: Optional[Union[int, Tuple[int, ...]]] = None,
+        hour: Optional[Union[int, Tuple[int, ...]]] = None,
         max_instance: int = 0
     ) -> Callable[..., None]:
         if id is None:
@@ -208,7 +227,7 @@ class Scheduler:
             task = _SchedulerTask(func, trigger, id=id, max_instance=max_instance)
             _task = Task(task.run_interval, interval)
             self.executor.submit(_task)
-        elif trigger == 'corn':
+        elif trigger == 'cron':
             task = _SchedulerTask(func, trigger, id=id, max_instance=max_instance)
             _task = Task(task.run_cron, second=second, minute=minute, hour=hour)
             self.executor.submit(_task)
@@ -244,34 +263,34 @@ class Scheduler:
     @overload
     def task(
         self,
-        trigger: Literal['corn'],
+        trigger: Literal['cron'],
         *,
         id: Optional[str] = None,
-        second: Optional[Tuple[int]] = None,
-        minute: Optional[Tuple[int]] = None,
-        hour: Optional[Tuple[int]] = None,
+        second: Optional[Tuple[int, ...]] = None,
+        minute: Optional[Tuple[int, ...]] = None,
+        hour: Optional[Tuple[int, ...]] = None,
         max_instance: int = 0
     ) -> Callable[[Callable[..., None]], Callable[..., None]]:
         '''Cron 定时任务装饰器，只能指定一种时间
 
         参数:
-            trigger (Literal[&#39;corn&#39;]): 定时任务策略
+            trigger (Literal[&#39;cron&#39;]): 定时任务策略
             id (Optional[str], optional): 定时任务 ID，默认为函数名称
-            second (Optional[Tuple[int]], optional): 执行秒数
-            minute (Optional[Tuple[int]], optional): 执行分钟数
-            hour (Optional[Tuple[int]], optional): 执行小时数
+            second (Optional[Tuple[int, ...]], optional): 执行秒数
+            minute (Optional[Tuple[int, ...]], optional): 执行分钟数
+            hour (Optional[Tuple[int, ...]], optional): 执行小时数
             max_instance (int, optional): 最大实例数，默认为 `0` 即无上限
         '''
         ...
     
     def task(
         self,
-        trigger: Literal['interval', 'corn'],
+        trigger: Literal['interval', 'cron'],
         *,
         id: Optional[str] = None,
-        second: Optional[Union[int, Tuple[int]]] = None,
-        minute: Optional[Union[int, Tuple[int]]] = None,
-        hour: Optional[Union[int, Tuple[int]]] = None,
+        second: Optional[Union[int, Tuple[int, ...]]] = None,
+        minute: Optional[Union[int, Tuple[int, ...]]] = None,
+        hour: Optional[Union[int, Tuple[int, ...]]] = None,
         max_instance: int = 0
     ) -> Callable[[Callable[..., None]], Callable[..., None]]:
         # 内部装饰器
@@ -286,3 +305,10 @@ class Scheduler:
                 max_instance=max_instance
             )
         return _decorator
+
+    def stop(self) -> None:
+        '''终止定时任务调度器'''
+        for task in self.tasks:
+            task.cancel()
+        sleep(1)
+        self.executor.stop()
