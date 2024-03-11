@@ -90,18 +90,7 @@ class PluginManager:
                 or module_info.name in previous_plugins
                 or module_info.name in plugins
             ):
-                raise RuntimeError(
-                    f'Plugin already exists: {module_info.name}!'
-                )
-            
-            if not (
-                module_spec := module_info.module_finder.find_spec(
-                    module_info.name, None
-                )
-            ):
-                raise RuntimeError(
-                    f'Plugin already exists: {module_info.name}!'
-                )
+                continue
             
             if not (
                 module_spec := module_info.module_finder.find_spec(
@@ -109,10 +98,12 @@ class PluginManager:
                 )
             ):
                 continue
+            
             if not (module_path := module_spec.origin):
                 continue
             searched_plugins[module_info.name] = Path(module_path).resolve()
-        
+        if len(searched_plugins) < 0:
+            raise RuntimeError('No loadable plugin found!')
         self._searched_plugin_names = searched_plugins
         
         return self.available_plugins

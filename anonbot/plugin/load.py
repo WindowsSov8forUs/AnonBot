@@ -16,7 +16,8 @@ def load_plugin(module_path: Union[str, Path]) -> Optional[Plugin]:
         path_to_module_name(module_path) if isinstance(module_path, Path)
         else module_path
     )
-    manager = PluginManager([module_path])
+    manager = PluginManager([module_path.split('.')[0]])
+    print(manager)
     _managers.append(manager)
     return manager.load_plugin(module_path)
 
