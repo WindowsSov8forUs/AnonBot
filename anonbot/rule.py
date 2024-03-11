@@ -91,7 +91,7 @@ class TrieRule:
                 has_arg = arg_str_stripped or msg
                 if (
                     has_arg
-                    and (stripped_len := len(arg_str) - len(arg_str_stripped)) > 0
+                    and (stripped_len := len(arg_str) - len(arg_str_stripped)) >= 0
                 ):
                     prefix[CMD_WHITESPACE_KEY] = arg_str[:stripped_len]
                 
@@ -101,6 +101,11 @@ class TrieRule:
                         msg.insert(0, new_segment)
                 prefix[CMD_ARG_KEY] = msg
         return prefix
+
+    @classmethod
+    def del_prefix(cls, prefix: str) -> None:
+        if prefix in cls.prefix:
+            del cls.prefix[prefix]
 
 class StartswithRule:
     '''检查消息纯文本是否以指定字符串开头'''
@@ -266,10 +271,19 @@ def keyword(*keywords: str) -> Rule:
 class CommandRule:
     '''检查消息纯文本是否为指定命令'''
     
-    __slots__ = ('cmds', 'force_whitespace')
+    __slots__ = ('cmds', 'command_start', 'force_whitespace')
     
-    def __init__(self, cmds: list[str], force_whitespace: Optional[Union[str, bool]] = None) -> None:
+    def __init__(
+        self,
+        cmds: list[str],
+        command_start: Union[CommandStart, Tuple[CommandStart, ...]],
+        force_whitespace: Optional[Union[str, bool]] = None
+    ) -> None:
         self.cmds = tuple(cmds)
+        self.command_start = cast(
+            Tuple[CommandStart, ...],
+            (command_start,) if type(command_start) is CommandStart else command_start
+        )
         self.force_whitespace = force_whitespace
     
     def __repr__(self) -> str:
@@ -306,15 +320,13 @@ def command(
     commands: list[str] = []
     command_start = cast(
         Tuple[CommandStart, ...],
-        (command_start,) if type(command_start) is CommandStart else command_start
+        (command_start,) if isinstance(command_start, str) else command_start
     )
     for command in cmds:
-        
         commands.append(command)
-        
         for start in command_start:
             TrieRule.add_prefix(f'{start}{command}', TRIE_VALUE(start, command))
-    return Rule(CommandRule(commands, force_whitespace))
+    return Rule(CommandRule(commands, command_start, force_whitespace))
 
 class RegexRule:
     '''检查消息字符串是否符合指定正则表达式'''
