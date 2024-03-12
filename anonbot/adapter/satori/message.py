@@ -317,6 +317,27 @@ class MessageSegment(BaseMessageSegment['Message']):
             data['theme'] = theme
         return Button('button', data) # type: ignore
     
+    @staticmethod
+    def passive(
+        id: Optional[str]=None,
+        seq: Optional[int]=None
+    ) -> 'Passive':
+        '''创建一个被动消息段
+
+        参数:
+            id (str, optional): 消息 ID
+            seq (int, optional): 消息序号
+
+        返回:
+            Passive: 被动消息段
+        '''
+        data: PassiveData = {}
+        if id is not None:
+            data['id'] = id
+        if seq is not None:
+            data['seq'] = seq
+        return Passive('passive', data)
+    
     @override
     def is_text(self) -> bool:
         return False
@@ -516,6 +537,14 @@ class ButtonData(TypedDict):
 @dataclass
 class Button(MessageSegment):
     data: ButtonData = field(default_factory=dict) # type: ignore
+
+class PassiveData(TypedDict):
+    id: NotRequired[str]
+    seq: NotRequired[int]
+
+@dataclass
+class Passive(MessageSegment):
+    data: PassiveData = field(default_factory=dict) # type: ignore
 
 ELEMENT_TYPE_MAP = {
     'text': (Text, 'text'),

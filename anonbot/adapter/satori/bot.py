@@ -178,6 +178,15 @@ class Bot(BaseBot):
     ) -> list[SatoriMessage]:
         if not event.channel:
             raise RuntimeError('Event cannot be replied to')
+        if kwargs.get('reply', None) is True:
+            if (_message := event.get_message_data()) is not None:
+                message += MessageSegment.quote(_message.id)
+        if (id_ := kwargs.get('id', None)) is not None:
+            if (seq := kwargs.get('seq', None)) is not None:
+                passive = MessageSegment.passive(id_, seq)
+            else:
+                passive = MessageSegment.passive(id_)
+            message = passive + message
         return self.message_create(channel_id=event.channel.id, content=str(message))
     
     @override
