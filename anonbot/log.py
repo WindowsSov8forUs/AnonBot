@@ -118,6 +118,10 @@ class Logger:
             module = inspect.getmodule(inspect.stack()[2][0])
             if module is not None:
                 name = module.__name__
+                if len((_names := name.split('.'))) >= 2 and _names[0] in ('anonbot',):
+                    if _names[1] == 'internal':
+                        name = '.'.join(_names[2:])
+                    name = '.'.join(_names[1:])
             else:
                 name = 'unknown'
         

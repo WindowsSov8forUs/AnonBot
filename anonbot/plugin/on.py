@@ -62,6 +62,7 @@ def get_processor_source(depth: int = 1) -> Optional[ProcessorSource]:
 
 def on(
     type: EventType,
+    name: str,
     rule: Optional[Union[Rule, RuleChecker]] = None,
     permission: Optional[Union[Permission, PermissionChecker]] = None,
     *,
@@ -87,6 +88,7 @@ def on(
         state (Optional[StateType]): 默认 state（一般无需手动添加）
     '''
     processor = Processor.new(
+        name,
         type,
         Rule() & rule,
         Permission() | permission,
@@ -451,6 +453,7 @@ def on_internal(*args, _depth: int = 0, **kwargs) -> Type[Processor]:
     return on(EventType.INTERNAL, *args, **kwargs, _depth=_depth + 1)
 
 def on_startswith(
+    name: str,
     msg: Union[str, Tuple[str, ...]],
     rule: Optional[Union[Rule, RuleChecker]] = None,
     ignorecase: bool = False,
@@ -460,6 +463,7 @@ def on_startswith(
     '''注册一个消息事件处理器，当消息文本部分以指定内容开头时响应
 
     参数:
+        name (str): 处理器名称
         msg (Union[str, Tuple[str, ...]]): 消息文本开头内容
         rule (Optional[Union[Rule, RuleChecker]]): 响应规则，同时满足规则的事件才会被处理
         ignorecase (bool): 是否忽略大小写
@@ -471,9 +475,10 @@ def on_startswith(
         block (bool): 是否阻塞事件（一般无需手动添加）
         state (Optional[StateType]): 默认 state（一般无需手动添加）
     '''
-    return on_message_created(startswith(msg, ignorecase) & rule, **kwargs, _depth=_depth + 1)
+    return on_message_created(name, startswith(msg, ignorecase) & rule, **kwargs, _depth=_depth + 1)
 
 def on_endswith(
+    name: str,
     msg: Union[str, Tuple[str, ...]],
     rule: Optional[Union[Rule, RuleChecker]] = None,
     ignorecase: bool = False,
@@ -483,6 +488,7 @@ def on_endswith(
     '''注册一个消息事件处理器，当消息文本部分以指定内容结尾时响应
 
     参数:
+        name (str): 处理器名称
         msg (Union[str, Tuple[str, ...]]): 消息文本结尾内容
         rule (Optional[Union[Rule, RuleChecker]]): 响应规则，同时满足规则的事件才会被处理
         ignorecase (bool): 是否忽略大小写
@@ -494,9 +500,10 @@ def on_endswith(
         block (bool): 是否阻塞事件（一般无需手动添加）
         state (Optional[StateType]): 默认 state（一般无需手动添加）
     '''
-    return on_message_created(endswith(msg, ignorecase) & rule, **kwargs, _depth=_depth + 1)
+    return on_message_created(name, endswith(msg, ignorecase) & rule, **kwargs, _depth=_depth + 1)
 
 def on_fullmatch(
+    name: str,
     msg: Union[str, Tuple[str, ...]],
     rule: Optional[Union[Rule, RuleChecker]] = None,
     ignorecase: bool = False,
@@ -506,6 +513,7 @@ def on_fullmatch(
     '''注册一个消息事件处理器，当消息文本完全匹配指定内容时响应
 
     参数:
+        name (str): 处理器名称
         msg (Union[str, Tuple[str, ...]]): 消息文本完全匹配内容
         rule (Optional[Union[Rule, RuleChecker]]): 响应规则，同时满足规则的事件才会被处理
         ignorecase (bool): 是否忽略大小写
@@ -517,9 +525,10 @@ def on_fullmatch(
         block (bool): 是否阻塞事件（一般无需手动添加）
         state (Optional[StateType]): 默认 state（一般无需手动添加）
     '''
-    return on_message_created(fullmatch(msg, ignorecase) & rule, **kwargs, _depth=_depth + 1)
+    return on_message_created(name, fullmatch(msg, ignorecase) & rule, **kwargs, _depth=_depth + 1)
 
 def on_keyword(
+    name: str,
     keywords: set[str],
     rule: Optional[Union[Rule, RuleChecker]] = None,
     _depth: int = 0,
@@ -528,6 +537,7 @@ def on_keyword(
     '''注册一个消息事件处理器，当消息文本包含指定关键词时响应
 
     参数:
+        name (str): 处理器名称
         keywords (set[str]): 关键词集合
         rule (Optional[Union[Rule, RuleChecker]]): 响应规则，同时满足规则的事件才会被处理
         permission (Optional[Union[Permission, PermissionChecker]]): 响应权限，任一权限满足的事件才会被处理
@@ -538,9 +548,10 @@ def on_keyword(
         block (bool): 是否阻塞事件（一般无需手动添加）
         state (Optional[StateType]): 默认 state（一般无需手动添加）
     '''
-    return on_message_created(keyword(*keywords) & rule, **kwargs, _depth=_depth + 1)
+    return on_message_created(name, keyword(*keywords) & rule, **kwargs, _depth=_depth + 1)
 
 def on_command(
+    name: str,
     cmd: str,
     command_start: Union[CommandStart, Tuple[CommandStart, ...]] = '/',
     rule: Optional[Union[Rule, RuleChecker]] = None,
@@ -552,6 +563,7 @@ def on_command(
     '''注册一个消息事件处理器，当消息文本为指定命令开头时响应
 
     参数:
+        name (str): 处理器名称
         cmd (str): 命令名称
         rule (Optional[Union[Rule, RuleChecker]]): 响应规则，同时满足规则的事件才会被处理
         aliases (Optional[set[str]]): 命令别名集合
@@ -567,12 +579,14 @@ def on_command(
     commands = {cmd} | (aliases or set())
     kwargs.setdefault('block', False)
     return on_message_created(
+        name,
         command(*commands, command_start=command_start, force_whitespace=force_whitespace) & rule,
         **kwargs,
         _depth=_depth + 1
     )
 
 def on_regex(
+    name: str,
     pattern: str,
     flags: Union[int, re.RegexFlag] = 0,
     rule: Optional[Union[Rule, RuleChecker]] = None,
@@ -582,6 +596,7 @@ def on_regex(
     '''注册一个消息事件处理器，当消息文本匹配指定正则表达式时响应
 
     参数:
+        name (str): 处理器名称
         pattern (str): 正则表达式
         flags (Union[int, re.RegexFlag]): 正则表达式标志
         rule (Optional[Union[Rule, RuleChecker]]): 响应规则，同时满足规则的事件才会被处理
@@ -593,9 +608,10 @@ def on_regex(
         block (bool): 是否阻塞事件（一般无需手动添加）
         state (Optional[StateType]): 默认 state（一般无需手动添加）
     '''
-    return on_message_created(regex(pattern, flags) & rule, **kwargs, _depth=_depth + 1)
+    return on_message_created(name, regex(pattern, flags) & rule, **kwargs, _depth=_depth + 1)
 
 def on_type(
+    name: str,
     types: Union[Type[Event], Tuple[Type[Event], ...]],
     rule: Optional[Union[Rule, RuleChecker]] = None,
     *,
@@ -605,6 +621,7 @@ def on_type(
     '''注册一个事件处理器，当事件类型为指定类型时响应
 
     参数:
+        name (str): 处理器名称
         types (Union[Type[Event], Tuple[Type[Event], ...]]): 事件类型
         rule (Optional[Union[Rule, RuleChecker]]): 响应规则，同时满足规则的事件才会被处理
         permission (Optional[Union[Permission, PermissionChecker]]): 响应权限，任一权限满足的事件才会被处理
@@ -616,4 +633,4 @@ def on_type(
         state (Optional[StateType]): 默认 state（一般无需手动添加）
     '''
     event_type = types if isinstance(types, tuple) else (types,)
-    return on(rule=is_type(*event_type) & rule, **kwargs, _depth=_depth + 1)
+    return on(name=name, rule=is_type(*event_type) & rule, **kwargs, _depth=_depth + 1)

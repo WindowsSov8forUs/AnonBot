@@ -1,6 +1,5 @@
 '''AnonBot 包装的 threading 模块'''
 
-from time import sleep
 from datetime import datetime, timedelta
 from typing import Tuple, Union, Generic, Literal, TypeVar, Callable, Optional, overload
 from threading import (
@@ -12,8 +11,8 @@ from threading import (
 )
 
 from anonbot.log import logger
-from anonbot.threading import Task, Thread, ThreadPoolExecutor
 from anonbot.plugin import _current_plugin_chain
+from anonbot.threading import Task, Thread, ThreadPoolExecutor, sleep
 
 R = TypeVar('R')
 
@@ -68,7 +67,7 @@ class _SchedulerTask(Generic[R]):
         '''
         _time = datetime.now()
         while True:
-            while (datetime.now() - _time).seconds < interval:
+            while (datetime.now() - _time).total_seconds() < interval:
                 sleep(1)
                 if self.cancelled:
                     return
@@ -102,13 +101,12 @@ class _SchedulerTask(Generic[R]):
             for value in sorted(target):
                 if value > now:
                     return value
-            return target[0]
+            return sorted(target)[0]
         
         while True:
             if self.cancelled:
                 return
             now = datetime.now()
-            next: datetime = now + timedelta(seconds=1)  # 给 next 变量一个默认值
             if all((second is None, minute is None, hour is None)):
                 logger.warn(f'定时任务 {self.id} 未设置任何触发时间，将不会执行。')
                 return
@@ -125,13 +123,14 @@ class _SchedulerTask(Generic[R]):
                     next = now.replace(hour=_get_next(hour, now.hour), minute=0, second=0)
                     if next < now:
                         next = next + timedelta(days=1)
+                else:
+                    next: datetime = now + timedelta(seconds=1)  # 给 next 变量一个默认值
                 sleep((next - datetime.now()).total_seconds())
                 if self.cancelled:
                     return
                 continue
             if self.max_instance and len(self._threads) >= self.max_instance:
                 now = datetime.now()
-                next: datetime = now
                 if second is not None:
                     next = now.replace(second=_get_next(second, now.second))
                     if next < now:
@@ -144,6 +143,8 @@ class _SchedulerTask(Generic[R]):
                     next = now.replace(hour=_get_next(hour, now.hour), minute=0, second=0)
                     if next < now:
                         next = next + timedelta(days=1)
+                else:
+                    next: datetime = now + timedelta(seconds=1)  # 给 next 变量一个默认值
                 logger.warn(
                     f'定时任务 {self.id} 实例数已达上限，'
                     f'将在 {next.strftime("%Y-%m-%d %H:%M:%S")} 时再次尝试执行。'
@@ -162,6 +163,8 @@ class _SchedulerTask(Generic[R]):
                 next = now.replace(hour=_get_next(hour, now.hour), minute=0, second=0)
                 if next < now:
                     next = next + timedelta(days=1)
+            else:
+                next: datetime = now + timedelta(seconds=1)  # 给 next 变量一个默认值
             sleep((next - datetime.now()).total_seconds())
 
     def cancel(self) -> bool:

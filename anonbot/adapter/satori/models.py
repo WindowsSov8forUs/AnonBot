@@ -2,7 +2,7 @@ from enum import IntEnum
 from datetime import datetime
 from typing import Any, Union, Literal, Optional
 
-from pydantic import BaseModel, Field, validator, model_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from anonbot.adapter import (
     Login as Login,
@@ -12,7 +12,7 @@ from anonbot.adapter import (
 
 class InnerMember(Member):
     
-    @validator('joined_at', pre=True)
+    @field_validator('joined_at', mode='before')
     def parse_joined_at(cls, v: Any) -> Optional[datetime]:
         if v is None:
             return None
@@ -31,12 +31,14 @@ class OuterMember(InnerMember):
 class InnerMessage(Message):
     
     @model_validator(mode='before')
+    @classmethod
     def ensure_content(cls, values: dict[str, Any]) -> dict[str, Any]:
         if 'content' in values:
             return values
         return {**values, 'content': ''}
     
-    @validator('created_at', pre=True)
+    @field_validator('created_at', mode='before')
+    @classmethod
     def parse_created_at(cls, v: Any) -> Optional[datetime]:
         if v is None:
             return None
@@ -48,7 +50,8 @@ class InnerMessage(Message):
             raise ValueError(f'Invalid timestamp: {v}') from exception
         return datetime.fromtimestamp(timestamp / 1000)
     
-    @validator('updated_at', pre=True)
+    @field_validator('updated_at', mode='before')
+    @classmethod
     def parse_updated_at(cls, v: Any) -> Optional[datetime]:
         if v is None:
             return None
@@ -89,7 +92,8 @@ class Event(BaseModel):
     _type: Optional[str] = None
     _data: Optional[dict[str, Any]] = None
     
-    @validator('timestamp', pre=True)
+    @field_validator('timestamp', mode='before')
+    @classmethod
     def parse_timestamp(cls, v: Any) -> datetime:
         if isinstance(v, datetime):
             return v
@@ -144,7 +148,7 @@ from anonbot.adapter import (
     Argv as Argv,
     User as User,
     Guild as Guild,
-    Button as Button,
+    ButtonModel as Button,
     GuildRole as Role,
     Channel as Channel,
     EventType as EventType,

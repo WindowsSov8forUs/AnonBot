@@ -1,16 +1,16 @@
 import json
 from typing_extensions import override
-from typing import TYPE_CHECKING, Any, Type, Union, Optional
+from typing import TYPE_CHECKING, Any, Union, Optional
 
+from anonbot.adapter import uni
 from anonbot.message import handle_event
 from anonbot.driver import Request, Response
-
 from anonbot.adapter import Bot as BaseBot
 
 from .config import ClientInfo
 from .event import Event, MessageEvent
-from .message import Message, MessageSegment
 from .models import InnerMessage as SatoriMessage
+from .message import Text, Message, MessageSegment
 from .models import Role, User, Guild, Login, Channel, Pagination, OuterMember
 from .exception import (
     ActionFailed,
@@ -25,6 +25,15 @@ from .exception import (
 
 if TYPE_CHECKING:
     from .adapter import Adapter
+
+_seqs: dict[str, int] = {}
+
+def _seq(id: str) -> int:
+    if id not in _seqs:
+        _seqs[id] = 0
+    else:
+        _seqs[id] += 1
+    return _seqs[id]
 
 def _check_reply(
     bot: 'Bot',
@@ -173,21 +182,66 @@ class Bot(BaseBot):
     def send(
         self,
         event: 'Event',
-        message: Union[str, 'Message', 'MessageSegment'],
+        message: Union[str, 'Message', 'MessageSegment', uni.Message],
+        at: bool = False,
+        reply: bool = False,
+        passive: bool = False,
         **kwargs: Any
     ) -> list[SatoriMessage]:
         if not event.channel:
             raise RuntimeError('Event cannot be replied to')
-        if kwargs.get('reply', None) is True:
+        if isinstance(message, uni.Message):
+            message = self.parse_uni_message(message)
+        if reply:
             if (_message := event.get_message_data()) is not None:
-                message += MessageSegment.quote(_message.id)
-        if (id_ := kwargs.get('id', None)) is not None:
-            if (seq := kwargs.get('seq', None)) is not None:
-                passive = MessageSegment.passive(id_, seq)
-            else:
-                passive = MessageSegment.passive(id_)
-            message = passive + message
+                message = MessageSegment.quote(_message.id) + message
+        elif at:
+            if (_operator := event.get_operator()) is not None:
+                message = MessageSegment.at(_operator.id) + message
+        if passive:
+            if (satori_msg := event.get_message_data()) is not None:
+                passive_seg = MessageSegment.passive(satori_msg.id, _seq(satori_msg.id))
+                message = passive_seg + message
         return self.message_create(channel_id=event.channel.id, content=str(message))
+    
+    @override
+    @staticmethod
+    def parse_uni_message(uni_message: uni.Message) -> Message:
+        msg = Message()
+        for seg in uni_message:
+            match seg.type:
+                case 'text':
+                    msg += MessageSegment.text(seg.text)
+                case 'at':
+                    msg += MessageSegment.at(**seg.data)
+                case 'sharp':
+                    msg += MessageSegment.sharp(**seg.data)
+                case 'link':
+                    msg += MessageSegment.a(seg.href)
+                case 'image':
+                    msg += MessageSegment.img(**seg.data)
+                case 'audio':
+                    msg += MessageSegment.audio(**seg.data)
+                case 'video':
+                    msg += MessageSegment.video(**seg.data)
+                case 'file':
+                    msg += MessageSegment.file(**seg.data)
+                case 'style':
+                    msg += Text('text', {'text': seg.text, 'styles': {(0, len(seg.text)): [seg.style]}})
+                case 'br':
+                    msg += MessageSegment.br()
+                case 'message':
+                    msg += MessageSegment.message(**seg.data)
+                case 'quote':
+                    msg += MessageSegment.quote(Bot.parse_uni_message(seg.content))
+                case 'author':
+                    msg += MessageSegment.author(**seg.data)
+                case 'button':
+                    msg += MessageSegment.button(**seg.data)
+                case _:
+                    msg += MessageSegment.custom(seg.type, **seg.data)
+        
+        return msg
     
     @override
     def channel_get(self, *, channel_id: str) -> Channel:

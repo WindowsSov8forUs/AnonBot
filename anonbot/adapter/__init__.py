@@ -11,7 +11,7 @@ from anonbot.internal.adapter import (
     User as User,
     Guild as Guild,
     Login as Login,
-    Button as Button,
+    Button as ButtonModel,
     Channel as Channel,
     EventType as EventType,
     GuildRole as GuildRole,
@@ -21,9 +21,31 @@ from anonbot.internal.adapter import (
     LoginStatus as LoginStatus,
     MessageModel as MessageModel
 )
+from anonbot.internal.adapter import uni as uni
+from anonbot.internal.adapter.uni import (
+    At as At,
+    Br as Br,
+    File as File,
+    Link as Link,
+    Text as Text,
+    Audio as Audio,
+    Image as Image,
+    Other as Other,
+    Quote as Quote,
+    Sharp as Sharp,
+    Style as Style,
+    Video as Video,
+    Author as Author,
+    Button as Button,
+    Message as UniMessage,
+    SrcBase64 as SrcBase64,
+    RenderMessage as RenderMessage,
+    MessageSegment as UniMessageSegment
+)
 
 __autodoc__ = {
     'Bot': True,
+    'uni': True,
     'Event': True,
     'Adapter': True,
     'Message': True,

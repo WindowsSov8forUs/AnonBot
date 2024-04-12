@@ -1,8 +1,8 @@
 from contextlib import ExitStack
 from typing import Union, NoReturn, Optional
 
-from anonbot.threading import gather
 from anonbot.dependency import Dependent
+from anonbot.threading import Task, gather
 from anonbot.exception import SkippedException
 from anonbot.typing import StateType, RuleChecker, DependencyCache
 
@@ -24,9 +24,11 @@ class Rule:
     
     def __init__(self, *checkers: Union[RuleChecker, Dependent[bool]]) -> None:
         self.checkers: set[Dependent[bool]] = {
-            checker if isinstance(checker, Dependent)
-            else Dependent[bool].parse(
-                call=checker, allow_types=self.HANDLER_PARAM_TYPES
+            (
+                checker if isinstance(checker, Dependent)
+                else Dependent[bool].parse(
+                    call=checker, allow_types=self.HANDLER_PARAM_TYPES
+                )
             ) for checker in checkers
         }
     
@@ -45,16 +47,15 @@ class Rule:
         try:
             result = gather(
                 *(
-                    (
+                    Task(
                         checker,
-                        {
-                            'bot': bot,
-                            'event': event,
-                            'state': state,
-                            'stack': stack,
-                            'dependency_cache': dependency_cache
-                        }
-                    ) for checker in self.checkers
+                        bot=bot,
+                        event=event,
+                        state=state,
+                        stack=stack,
+                        dependency_cache=dependency_cache
+                    )
+                    for checker in self.checkers
                 )
             )
         except SkippedException:

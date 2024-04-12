@@ -10,16 +10,15 @@ from .model import Plugin
 from .manager import PluginManager
 from . import _managers, _plugin_load_chain, _current_plugin_chain, get_plugin, _module_name_to_plugin_name
 
-def load_plugin(module_path: Union[str, Path]) -> Optional[Plugin]:
+def load_plugin(module_path: Union[str, Path], reload: bool = False) -> Optional[Plugin]:
     '''加载单个插件'''
     module_path = (
         path_to_module_name(module_path) if isinstance(module_path, Path)
         else module_path
     )
     manager = PluginManager([module_path.split('.')[0]])
-    print(manager)
     _managers.append(manager)
-    return manager.load_plugin(module_path)
+    return manager.load_plugin(module_path, reload)
 
 def load_plugins(*plugin_dir: str) -> set[Plugin]:
     '''导入文件夹下多个插件

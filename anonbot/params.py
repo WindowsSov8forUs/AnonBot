@@ -1,11 +1,11 @@
 '''定义了依赖注入的各类参数'''
 
-from typing import Any, Match, Tuple, Union, Optional
+from typing import Any, Match, Tuple, Optional
 
 from anonbot.typing import StateType
 from anonbot.processor import Processor
-from anonbot.adapter import Event, Message
 from anonbot.internal.params import Arg as Arg
+from anonbot.adapter import uni, Event, Message
 from anonbot.internal.params import ArgStr as ArgStr
 from anonbot.internal.params import Depends as Depends
 from anonbot.internal.params import ArgParam as ArgParam
@@ -64,6 +64,13 @@ def _event_to_me(event: Event) -> bool:
 def EventToMe() -> bool:
     '''`anonbot.adapter.Event` `to_me` 参数'''
     return Depends(_event_to_me)
+
+def _uni_message(event: Event) -> uni.Message:
+    return event.get_uni_message()
+
+def UniMessage() -> uni.Message:
+    '''`anonbot.adapter.Event` 通用消息参数'''
+    return Depends(_uni_message)
 
 def _command(state: StateType) -> Message:
     return state[PREFIX_KEY][CMD_KEY]

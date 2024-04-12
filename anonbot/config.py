@@ -22,8 +22,11 @@ class BaseConfig(BaseSettings):
     
     @classmethod
     def load_from_yaml(cls, path: str) -> Self:
-        with open(path, 'r') as file:
-            data = yaml.safe_load(file)
+        try:
+            with open(path, 'r', encoding='utf-8') as file:
+                data = yaml.safe_load(file)
+        except Exception:
+            data = {}
         return cls.model_validate(data)
 
 class Config(BaseConfig):

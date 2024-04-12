@@ -1,27 +1,22 @@
 from datetime import datetime
 from enum import IntEnum, StrEnum
-from typing import Any, Generic, TypeVar, Optional
+from typing import Any, Union, Generic, TypeVar, Optional
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 T = TypeVar('T')
-C = TypeVar('C', bound='Channel')
 
-class Argv(BaseModel):
-    '''交互指令'''
-    
-    name: str
-    '''指令名称'''
-    arguments: list[Any]
-    '''参数'''
-    options: Any
-    '''选项'''
-
-class Button(BaseModel):
-    '''交互按钮'''
+class Channel(BaseModel):
+    '''频道'''
     
     id: str
-    '''按钮 ID'''
+    '''频道 ID'''
+    type: 'ChannelType'
+    '''频道类型'''
+    name: Optional[str] = None
+    '''频道名称'''
+    parent_id: Optional[str] = None
+    '''父频道 ID'''
 
 class ChannelType(IntEnum):
     '''频道类型'''
@@ -34,18 +29,6 @@ class ChannelType(IntEnum):
     '''分类频道'''
     VOICE = 3
     '''语音频道'''
-
-class Channel(BaseModel):
-    '''频道'''
-    
-    id: str
-    '''频道 ID'''
-    type: ChannelType
-    '''频道类型'''
-    name: Optional[str] = None
-    '''频道名称'''
-    parent_id: Optional[str] = None
-    '''父频道 ID'''
 
 class Guild(BaseModel):
     '''群组'''
@@ -68,6 +51,19 @@ class GuildMember(BaseModel):
     '''用户在群组中的头像'''
     joined_at: Optional[datetime] = None
     '''加入时间'''
+    
+    @field_validator('joined_at', mode='before')
+    @classmethod
+    def joined_at_validator(cls, value: Optional[Union[int, float, datetime]]) -> Optional[datetime]:
+        '''加入时间验证器'''
+        
+        if value is not None:
+            if isinstance(value, int):
+                return datetime.fromtimestamp(value / 1000.0)
+            elif isinstance(value, float):
+                return datetime.fromtimestamp(value)
+            return value
+        return None
 
 class GuildRole(BaseModel):
     '''群组角色'''
@@ -76,6 +72,34 @@ class GuildRole(BaseModel):
     '''角色 ID'''
     name: Optional[str] = None
     '''角色名称'''
+
+class Argv(BaseModel):
+    '''交互指令'''
+    
+    name: str
+    '''指令名称'''
+    arguments: list[Any]
+    '''参数'''
+    options: Any
+    '''选项'''
+
+class Button(BaseModel):
+    '''交互按钮'''
+    
+    id: str
+    '''按钮 ID'''
+
+class Login(BaseModel):
+    '''登录信息'''
+    
+    user: Optional['User'] = None
+    '''用户对象'''
+    self_id: Optional[str] = None
+    '''平台账号'''
+    platform: Optional[str] = None
+    '''平台名称'''
+    status: 'LoginStatus'
+    '''登录状态'''
 
 class LoginStatus(IntEnum):
     '''登录状态'''
@@ -91,18 +115,6 @@ class LoginStatus(IntEnum):
     RECONNECT = 4
     '''重新连接'''
 
-class Login(BaseModel):
-    '''登录信息'''
-    
-    user: Optional['User'] = None
-    '''用户对象'''
-    self_id: Optional[str] = None
-    '''平台账号'''
-    platform: Optional[str] = None
-    '''平台名称'''
-    status: LoginStatus = LoginStatus.OFFLINE
-    '''登录状态'''
-
 class Message(BaseModel):
     '''消息'''
     
@@ -116,10 +128,38 @@ class Message(BaseModel):
     '''群组对象'''
     member: Optional[GuildMember] = None
     '''成员对象'''
+    user: Optional['User'] = None
+    '''用户对象'''
     created_at: Optional[datetime] = None
     '''消息发送的时间戳'''
     updated_at: Optional[datetime] = None
     '''消息修改的时间戳'''
+    
+    @field_validator('created_at', mode='before')
+    @classmethod
+    def created_at_validator(cls, value: Optional[Union[int, float, datetime]]) -> Optional[datetime]:
+        '''创建时间验证器'''
+        
+        if value is not None:
+            if isinstance(value, int):
+                return datetime.fromtimestamp(value / 1000.0)
+            elif isinstance(value, float):
+                return datetime.fromtimestamp(value)
+            return value
+        return None
+    
+    @field_validator('updated_at', mode='before')
+    @classmethod
+    def updated_at_validator(cls, value: Optional[Union[int, float, datetime]]) -> Optional[datetime]:
+        '''更新时间验证器'''
+        
+        if value is not None:
+            if isinstance(value, int):
+                return datetime.fromtimestamp(value / 1000.0)
+            elif isinstance(value, float):
+                return datetime.fromtimestamp(value)
+            return value
+        return None
 
 class User(BaseModel):
     '''用户'''

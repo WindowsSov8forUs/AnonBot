@@ -5,7 +5,8 @@ from typing import Any, Type, Union, TypeVar, Optional
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 from .message import Message
-from .models import Message as MessageData
+from .models import Message as SatoriMessage
+from .uni.message import Message as UniMessage
 from .models import (
     Argv,
     User,
@@ -81,7 +82,7 @@ class Event(abc.ABC, BaseModel):
         raise NotImplementedError
     
     @abc.abstractmethod
-    def get_message_data(self) -> Optional[MessageData]:
+    def get_message_data(self) -> Optional[SatoriMessage]:
         '''事件的消息'''
         raise NotImplementedError
     
@@ -108,6 +109,11 @@ class Event(abc.ABC, BaseModel):
     @abc.abstractmethod
     def get_origin_data(self) -> Optional[dict[str, Any]]:
         '''原生事件数据'''
+        raise NotImplementedError
+    
+    @abc.abstractmethod
+    def get_uni_message(self) -> UniMessage:
+        '''事件的通用消息'''
         raise NotImplementedError
     
     @classmethod

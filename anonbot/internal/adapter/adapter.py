@@ -53,15 +53,16 @@ class Adapter(abc.ABC):
         self.driver._bot_connect(bot, platform)
         self.bots[f'{platform}:{bot.self_id}'] = bot
     
-    def bot_disconnect(self, bot: Bot) -> None:
+    def bot_disconnect(self, bot: Bot, platform: str) -> None:
         '''告知 AnonBot 断开了一个 `anonbot.adapters.Bot` 连接
     
         参数:
             bot (Bot): `anonbot.adapters.Bot` 实例
+            platform (str): 平台名称
         '''
-        if self.bots.pop(bot.self_id, None) is None:
-            raise RuntimeError(f'{bot} not found in adapter {self.get_name()}')
-        self.driver._bot_disconnect(bot)
+        if self.bots.pop(f'{platform}:{bot.self_id}', None) is None:
+            raise RuntimeError(f'{bot} in platform {platform} not found in adapter {self.get_name()}')
+        self.driver._bot_disconnect(bot, platform)
     
     def setup_http_server(self, setup: HTTPServerSetup) -> None:
         '''设置一个 HTTP 服务器路由配置'''

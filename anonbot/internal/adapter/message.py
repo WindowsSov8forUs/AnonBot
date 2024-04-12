@@ -1,6 +1,4 @@
 import abc
-from io import BytesIO
-from pathlib import Path
 from copy import deepcopy
 from dataclasses import field, asdict, dataclass
 from typing import (
@@ -10,7 +8,6 @@ from typing import (
     Tuple,
     Union,
     Generic,
-    Literal,
     TypeVar,
     Callable,
     Iterable,
@@ -18,7 +15,6 @@ from typing import (
     Optional,
     Generator,
     ItemsView,
-    TypedDict,
     ValuesView,
     SupportsIndex,
     overload
@@ -30,13 +26,6 @@ from anonbot.utils import custom_validation
 
 TMS = TypeVar('TMS', bound='MessageSegment')
 TM = TypeVar('TM', bound='Message')
-
-class SrcBase64(TypedDict):
-    '''base64 资源元素'''
-    data: Union[bytes, BytesIO]
-    '''base64 数据'''
-    mime: str
-    '''MIME 类型'''
 
 @dataclass
 class MessageSegment(abc.ABC, Generic[TM]):
@@ -105,297 +94,6 @@ class MessageSegment(abc.ABC, Generic[TM]):
     def is_text(self) -> bool:
         '''当前消息段是否为纯文本'''
         raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def text(text: str) -> TMS: # type: ignore
-        '''纯文本
-
-        参数:
-            text (str): 一段纯文本
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def at(
-        id: Optional[str]=None,
-        name: Optional[str]=None,
-        role: Optional[str]=None,
-        type: Optional[str]=None
-    ) -> TMS: # type: ignore
-        '''提及用户
-
-        参数:
-            id (str, optional): 目标用户的 ID
-            name (str, optional): 目标用户的名称
-            role (str, optional): 目标角色
-            type (str, optional): 特殊操作
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def sharp(id: str, name: Optional[str]=None) -> TMS: # type: ignore
-        '''提及频道
-
-        参数:
-            id (str): 目标频道的 ID
-            name (str, optional): 目标频道的名称
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def a(href: str) -> TMS: # type: ignore
-        '''链接
-
-        参数:
-            href (str): 链接的 URL
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def img(
-        src: Union[str, Path, SrcBase64],
-        title: Optional[str] = None,
-        cache: Optional[bool] = None,
-        timeout: Optional[str] = None
-    ) -> TMS: # type: ignore
-        '''图片
-
-        参数:
-            src (str | Path | SrcBase64): 资源的 URL
-            title (str, optional): 资源文件名称
-            cache (bool, optional): 是否使用已缓存的文件
-            timeout (str, optional): 下载文件的最长时间 (毫秒)
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def audio(
-        src: Union[str, Path, SrcBase64],
-        title: Optional[str] = None,
-        cache: Optional[bool] = None,
-        timeout: Optional[str] = None,
-        poster: Optional[str] = None
-    ) -> TMS: # type: ignore
-        '''音频
-
-        参数:
-            src (str | Path | SrcBase64): 资源的 URL
-            title (str, optional): 资源文件名称
-            cache (bool, optional): 是否使用已缓存的文件
-            timeout (str, optional): 下载文件的最长时间 (毫秒)
-            poster (str, optional): 缩略图 URL
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def video(
-        src: Union[str, Path, SrcBase64],
-        title: Optional[str] = None,
-        cache: Optional[bool] = None,
-        timeout: Optional[str] = None,
-        poster: Optional[str] = None
-    ) -> TMS: # type: ignore
-        '''视频
-
-        参数:
-            src (str | Path | SrcBase64): 资源的 URL
-            title (str, optional): 资源文件名称
-            cache (bool, optional): 是否使用已缓存的文件
-            timeout (str, optional): 下载文件的最长时间 (毫秒)
-            poster (str, optional): 缩略图 URL
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def file(
-        src: Union[str, Path, SrcBase64],
-        title: Optional[str] = None,
-        cache: Optional[bool] = None,
-        timeout: Optional[str] = None,
-        poster: Optional[str] = None
-    ) -> TMS: # type: ignore
-        '''文件
-
-        参数:
-            src (str | Path | SrcBase64): 资源的 URL
-            title (str, optional): 资源文件名称
-            cache (bool, optional): 是否使用已缓存的文件
-            timeout (str, optional): 下载文件的最长时间 (毫秒)
-            poster (str, optional): 缩略图 URL
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def b(child: Union[str, TMS, Iterable[TMS]]) -> TMS:
-        '''粗体
-
-        参数:
-            child (str | TMS | Iterable[TMS]): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def i(child: Union[str, TMS, Iterable[TMS]]) -> TMS:
-        '''斜体
-
-        参数:
-            child (str | TMS | Iterable[TMS]): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def u(child: Union[str, TMS, Iterable[TMS]]) -> TMS:
-        '''下划线
-
-        参数:
-            child (str | TMS | Iterable[TMS]): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def s(child: Union[str, TMS, Iterable[TMS]]) -> TMS:
-        '''删除线
-
-        参数:
-            child (str | TMS | Iterable[TMS]): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def spl(child: Union[str, TMS, Iterable[TMS]]) -> TMS:
-        '''剧透
-
-        参数:
-            child (str | TMS | Iterable[TMS]): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def code(child: Union[str, TMS, Iterable[TMS]]) -> TMS:
-        '''代码
-
-        参数:
-            child (str | TMS | Iterable[TMS]): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def sup(child: Union[str, TMS, Iterable[TMS]]) -> TMS:
-        '''上标
-
-        参数:
-            child (str | TMS | Iterable[TMS]): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def sub(child: Union[str, TMS, Iterable[TMS]]) -> TMS:
-        '''下标
-
-        参数:
-            child (str | TMS | Iterable[TMS]): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def br() -> TMS: # type: ignore
-        '''换行'''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def p(child: Union[str, TMS, Iterable[TMS]]) -> TMS:
-        '''段落
-
-        参数:
-            child (str | TMS | Iterable[TMS]): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def message(
-        id: Optional[str]=None,
-        forward: Optional[bool]=None,
-        message: Optional[Union[str, TMS, Iterable[TMS]]]=None
-    ) -> TMS:
-        '''消息
-
-        参数:
-            id (str, optional): 消息的 ID
-            forward (bool, optional): 是否为转发消息
-            message (str | TMS | Iterable[TMS], optional): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def quote(
-        id: Optional[str]=None,
-        forward: Optional[bool]=None,
-        message: Optional[Union[str, TMS, Iterable[TMS]]]=None
-    ) -> TMS:
-        '''引用
-
-        参数:
-            id (str, optional): 消息的 ID
-            forward (bool, optional): 是否为转发消息
-            message (str | TMS | Iterable[TMS], optional): 子消息内容
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def author(
-        id: Optional[str]=None,
-        name: Optional[str]=None,
-        avatar: Optional[str]=None
-    ) -> TMS: # type: ignore
-        '''作者
-
-        参数:
-            id (str, optional): 用户 ID
-            name (str, optional): 昵称
-            avatar (str, optional): 头像 URL
-        '''
-        raise NotImplementedError
-    
-    @staticmethod
-    @abc.abstractmethod
-    def button(
-        id: Optional[str]=None,
-        type: Optional[Literal['action', 'link', 'input']]=None,
-        href: Optional[str]=None,
-        text: Optional[str]=None,
-        theme: Optional[str]=None
-    ) -> TMS: # type: ignore
-        '''按钮
-
-        参数:
-            id (str, optional): 按钮的 ID
-            type (str, optional): 按钮的类型
-            href (str, optional): 按钮的链接
-            text (str, optional): 待输入文本
-            theme (str, optional): 按钮的样式
-        '''
-        raise NotImplementedError
 
 @custom_validation
 class Message(list[TMS], abc.ABC):
@@ -403,7 +101,7 @@ class Message(list[TMS], abc.ABC):
 
     参数:
         message (str | None | Iterable[TMS] | TMS, optional): 消息内容'''
-    def __init__(self, message: Union[str, None, Iterable[TMS], TMS] = None) -> None:
+    def __init__(self, message: Optional[Union[str, TMS, Iterable[TMS]]] = None) -> None:
         super().__init__()
         if message is None:
             return

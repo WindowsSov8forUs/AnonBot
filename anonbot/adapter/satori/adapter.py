@@ -1,5 +1,4 @@
 import json
-from time import sleep
 from typing_extensions import override
 from typing import Any, Literal, Optional
 
@@ -79,7 +78,7 @@ class Adapter(BaseAdapter):
         return payload.model_dump_json(by_alias=True)
     
     def receive_payload(self, info: ClientInfo, ws: WebSocket) -> Payload:
-        payload = TypeAdapter(PayloadType).validate_python(json.loads(ws.receive()))
+        payload: PayloadType = TypeAdapter(PayloadType).validate_python(json.loads(ws.receive())) # type: ignore
         if isinstance(payload, EventPayload):
             self.sequences[info.identity] = payload.body.id
         return payload
@@ -122,16 +121,16 @@ class Adapter(BaseAdapter):
             return
         return True
     
+    @threading.loop
     def _heartbeat(self, info: ClientInfo, ws: WebSocket) -> None:
         '''心跳'''
-        while True:
-            logger.trace(f'Heartbeat at {self.sequences.get(info.identity, None)}')
-            payload = PingPayload(op=Opcode.PING, body={})
-            try:
-                ws.send(self.payload_to_json(payload))
-            except Exception as exception:
-                logger.warn(f'Error while sending Ping payload: ', exception)
-            sleep(9)
+        logger.trace(f'Heartbeat at {self.sequences.get(info.identity, None)}')
+        payload = PingPayload(op=Opcode.PING, body={})
+        try:
+            ws.send(self.payload_to_json(payload))
+        except Exception as exception:
+            logger.warn(f'Error while sending Ping payload: ', exception)
+        threading.sleep(9)
     
     def ws(self, info: ClientInfo) -> None:
         ws_url = info.ws_base / 'events'
@@ -143,7 +142,7 @@ class Adapter(BaseAdapter):
                     logger.debug(f'WebSocket connected to {ws_url}')
                     try:
                         if not self._authenticate(info, ws):
-                            sleep(3)
+                            threading.sleep(3)
                             continue
                         heartbeat_task = threading.create_task(self._heartbeat, info, ws)
                         self._loop(info, ws)
@@ -157,45 +156,45 @@ class Adapter(BaseAdapter):
                             heartbeat_task = None
                         bots = list(self.bots.values())
                         for bot in bots:
-                            self.bot_disconnect(bot)
+                            self.bot_disconnect(bot, bot.platform)
                         bots.clear()
             except Exception as exception:
                 logger.error(f'Error while connecting to WebSocket {ws_url}', exception=exception)
-                sleep(3)
+                threading.sleep(3)
     
+    @threading.loop
     def _loop(self, info: ClientInfo, ws: WebSocket) -> None:
-        while True:
-            payload = self.receive_payload(info, ws)
-            logger.trace(f'Received payload: {repr(payload)}')
-            if isinstance(payload, EventPayload):
-                try:
-                    event = self.payload_to_event(payload.body)
-                except Exception as exception:
-                    logger.warn(f'Failed to parse event payload: {payload}', exception)
-                else:
-                    if isinstance(event, LoginAddedEvent):
-                        bot = Bot(self, event.self_id, event.platform, info)
-                        if event.user:
-                            bot.on_ready(event.user)
-                        self.bot_connect(bot, event.platform)
-                        logger.info(f'Bot {bot.self_id} connected to {bot.platform}')
-                    elif isinstance(event, LoginRemovedEvent):
-                        self.bot_disconnect(self.bots[f'{event.platform}:{event.self_id}'])
-                        logger.info(f'Bot {event.self_id} disconnected from {event.platform}')
-                        continue
-                    elif isinstance(event, LoginUpdatedEvent):
-                        self.bots[f'{event.platform}:{event.self_id}'].on_ready(event.user) if event.user else None
-                    if not (bot := self.bots.get(f'{event.platform}:{event.self_id}')):
-                        logger.warn(f'Bot {event.self_id} at {event.platform} not found')
-                        continue
-                    if isinstance(event, InteractionCommandEvent):
-                        event = event.convert()
-                    threading.create_task(bot.handle_event, event)
-            elif isinstance(payload, PongPayload):
-                logger.trace('Pong')
-                continue
+        payload = self.receive_payload(info, ws)
+        logger.trace(f'Received payload: {repr(payload)}')
+        if isinstance(payload, EventPayload):
+            try:
+                event = self.payload_to_event(payload.body)
+            except Exception as exception:
+                logger.warn(f'Failed to parse event payload: {payload}', exception)
             else:
-                logger.warn(f'Unknown payload: {repr(payload)}')
+                if isinstance(event, LoginAddedEvent):
+                    bot = Bot(self, event.self_id, event.platform, info)
+                    if event.user:
+                        bot.on_ready(event.user)
+                    self.bot_connect(bot, event.platform)
+                    logger.info(f'Bot {bot.self_id} connected to {bot.platform}')
+                elif isinstance(event, LoginRemovedEvent):
+                    self.bot_disconnect(self.bots[f'{event.platform}:{event.self_id}'], event.platform)
+                    logger.info(f'Bot {event.self_id} disconnected from {event.platform}')
+                    return
+                elif isinstance(event, LoginUpdatedEvent):
+                    self.bots[f'{event.platform}:{event.self_id}'].on_ready(event.user) if event.user else None
+                if not (bot := self.bots.get(f'{event.platform}:{event.self_id}')):
+                    logger.warn(f'Bot {event.self_id} at {event.platform} not found')
+                    return
+                if isinstance(event, InteractionCommandEvent):
+                    event = event.convert()
+                threading.create_task(bot.handle_event, event)
+        elif isinstance(payload, PongPayload):
+            logger.trace('Pong')
+            return
+        else:
+            logger.warn(f'Unknown payload: {repr(payload)}')
     
     @staticmethod
     def payload_to_event(payload: SatoriEvent) -> Event:

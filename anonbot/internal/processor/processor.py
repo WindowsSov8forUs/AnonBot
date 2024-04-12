@@ -32,11 +32,13 @@ from anonbot.internal.adapter import (
     Event,
     Message,
     EventType,
+    UniMessage,
     MessageSegment
 )
 from anonbot.typing import (
     StateType,
     HandlerType,
+    RuleUpdater,
     TypeUpdater,
     DependencyCache,
     PermissionUpdater
@@ -76,7 +78,7 @@ T = TypeVar('T')
 current_bot: ContextVar[Bot] = ContextVar('current_bot')
 current_event: ContextVar[Event] = ContextVar('current_event')
 current_processor: ContextVar['Processor'] = ContextVar('current_processor')
-current_handler: ContextVar[Dependent] = ContextVar('current_handler')
+current_handler: ContextVar[Dependent[Any]] = ContextVar('current_handler')
 
 @dataclass
 class ProcessorSource:
@@ -107,6 +109,7 @@ class ProcessorSource:
 
 class ProcessorMeta(type):
     if TYPE_CHECKING:
+        name: str
         type: str
         _source: Optional[ProcessorSource]
         module_name: Optional[str]
@@ -128,6 +131,8 @@ class Processor(metaclass=ProcessorMeta):
     
     _source: ClassVar[Optional[ProcessorSource]] = None
     
+    name: str
+    '''事件处理器名称'''
     type: ClassVar[str] = ''
     '''事件处理器类型'''
     rule: ClassVar[Rule] = Rule()
@@ -152,6 +157,8 @@ class Processor(metaclass=ProcessorMeta):
     '''默认类型更新器'''
     _default_permission_updater: ClassVar[Optional[Dependent[Permission]]] = None
     '''默认权限更新器'''
+    _default_rule_updater: ClassVar[Optional[Dependent[Rule]]] = None
+    '''默认匹配规则更新器'''
     
     HANDLER_PARAM_TYPES: ClassVar[Tuple[Type[Param], ...]] = (
         DependParam,
@@ -164,7 +171,7 @@ class Processor(metaclass=ProcessorMeta):
     )
     
     def __init__(self) -> None:
-        self.handlers = self.handlers.copy()
+        self.remain_handlers = self.handlers.copy()
         self.state = self._default_state.copy()
     
     def __repr__(self) -> str:
@@ -181,6 +188,7 @@ class Processor(metaclass=ProcessorMeta):
     @classmethod
     def new(
         cls,
+        name: str,
         type_: Union[EventType, str] = '',
         rule: Optional[Rule] = None,
         permission: Optional[Permission] = None,
@@ -200,6 +208,7 @@ class Processor(metaclass=ProcessorMeta):
             cls.__name__,
             (cls,),
             {
+                'name': name,
                 '_source': source,
                 'type': type_,
                 'rule': rule or Rule(),
@@ -297,7 +306,7 @@ class Processor(metaclass=ProcessorMeta):
     
     @classmethod
     def type_updater(cls, func: TypeUpdater) -> TypeUpdater:
-        '''类型更新器装饰器'''
+        '''响应事件类型更新器装饰器'''
         cls._default_type_updater = Dependent[str].parse(
             call=func, allow_types=cls.HANDLER_PARAM_TYPES
         )
@@ -307,6 +316,14 @@ class Processor(metaclass=ProcessorMeta):
     def permission_updater(cls, func: PermissionUpdater) -> PermissionUpdater:
         '''权限更新器装饰器'''
         cls._default_permission_updater = Dependent[Permission].parse(
+            call=func, allow_types=cls.HANDLER_PARAM_TYPES
+        )
+        return func
+    
+    @classmethod
+    def rule_updater(cls, func: RuleUpdater) -> RuleUpdater:
+        '''匹配规则更新器装饰器'''
+        cls._default_rule_updater = Dependent[Rule].parse(
             call=func, allow_types=cls.HANDLER_PARAM_TYPES
         )
         return func
@@ -362,7 +379,7 @@ class Processor(metaclass=ProcessorMeta):
         return _decorator
     
     @classmethod
-    def get(cls, key: str, prompt: Optional[Union[str, Message, MessageSegment]] = None, parameterless: Optional[Iterable[Any]] = None) -> Callable[[HandlerType], HandlerType]:
+    def get(cls, key: str, prompt: Optional[Union[str, Message, MessageSegment, UniMessage]] = None, parameterless: Optional[Iterable[Any]] = None) -> Callable[[HandlerType], HandlerType]:
         '''装饰一个函数来获取指定参数 `key`'''
         
         def _key_getter(event: Event, processor: 'Processor') -> None:
@@ -374,7 +391,7 @@ class Processor(metaclass=ProcessorMeta):
                 return
             processor.reject(prompt)
         
-        parameterless = (Depends(_key_getter), *(parameterless or ()))
+        _parameterless = (Depends(_key_getter), *(parameterless or ()))
         
         def _decorator(call: HandlerType) -> HandlerType:
             if cls.handlers and cls.handlers[-1].call is call:
@@ -383,45 +400,45 @@ class Processor(metaclass=ProcessorMeta):
                     call=handler.call,
                     params=handler.params,
                     parameterless=Dependent.parse_parameterless(
-                        tuple(parameterless), cls.HANDLER_PARAM_TYPES
+                        tuple(_parameterless), cls.HANDLER_PARAM_TYPES
                     ) + handler.parameterless
                 )
                 cls.handlers[-1] = new_handler
             else:
-                cls.append_handler(call, parameterless=parameterless)
+                cls.append_handler(call, parameterless=_parameterless)
             return call
         return _decorator
     
     @classmethod
-    def send(cls, message: Union[str, Message, MessageSegment], **kwargs: Any) -> Any:
+    def send(cls, message: Union[str, Message, MessageSegment, UniMessage], **kwargs: Any) -> Any:
         '''发送消息'''
         bot = current_bot.get()
         event = current_event.get()
         return bot.send(event, message, **kwargs)
     
     @classmethod
-    def finish(cls, message: Optional[Union[str, Message, MessageSegment]] = None, **kwargs: Any) -> NoReturn:
+    def finish(cls, message: Optional[Union[str, Message, MessageSegment, UniMessage]] = None, **kwargs: Any) -> NoReturn:
         '''发送一条消息并结束当前事件处理'''
         if message is not None:
             cls.send(message, **kwargs)
         raise FinishedException
     
     @classmethod
-    def next(cls, prompt: Optional[Union[str, Message, MessageSegment]] = None, **kwargs: Any) -> NoReturn:
+    def next(cls, prompt: Optional[Union[str, Message, MessageSegment, UniMessage]] = None, **kwargs: Any) -> NoReturn:
         '''发送一条消息，在接受新的消息后继续下一个处理函数'''
         if prompt is not None:
             cls.send(prompt, **kwargs)
         raise PausedException
     
     @classmethod
-    def reject(cls, prompt: Optional[Union[str, Message, MessageSegment]] = None, **kwargs: Any) -> NoReturn:
+    def reject(cls, prompt: Optional[Union[str, Message, MessageSegment, UniMessage]] = None, **kwargs: Any) -> NoReturn:
         '''最近通过 `get` 或 `receive` 接收的消息不满足条件，等待下一条消息后重新运行当前处理函数'''
         if prompt is not None:
             cls.send(prompt, **kwargs)
         raise RejectedException
     
     @classmethod
-    def reject_arg(cls, key: str, prompt: Optional[Union[str, Message, MessageSegment]] = None, **kwargs: Any) -> NoReturn:
+    def reject_arg(cls, key: str, prompt: Optional[Union[str, Message, MessageSegment, UniMessage]] = None, **kwargs: Any) -> NoReturn:
         '''指定的 `get` 消息不满足条件，等待下一条消息后重新运行当前处理函数'''
         processor = current_processor.get()
         processor.set_target(ARG_KEY.format(key=key))
@@ -430,7 +447,7 @@ class Processor(metaclass=ProcessorMeta):
         raise RejectedException
     
     @classmethod
-    def reject_receive(cls, id: str = '', prompt: Optional[Union[str, Message, MessageSegment]] = None, **kwargs: Any) -> NoReturn:
+    def reject_receive(cls, id: str = '', prompt: Optional[Union[str, Message, MessageSegment, UniMessage]] = None, **kwargs: Any) -> NoReturn:
         '''指定的 `receive` 消息不满足条件，等待下一条消息后重新运行当前处理函数'''
         processor = current_processor.get()
         processor.set_target(RECEIVE_KEY.format(id=id))
@@ -526,7 +543,7 @@ class Processor(metaclass=ProcessorMeta):
                 processor=self,
                 stack=stack,
                 dependency_cache=dependency_cache
-            ) if updater else 'message'
+            ) if updater else 'message-created' # 默认为消息发送事件
         )
     
     def update_permission(
@@ -547,9 +564,27 @@ class Processor(metaclass=ProcessorMeta):
             )
         return Permission(User.from_event(event, perm=self.permission))
     
+    def update_rule(
+        self,
+        bot: Bot,
+        event: Event,
+        stack: Optional[ExitStack] = None,
+        dependency_cache: Optional[DependencyCache] = None
+    ) -> Rule:
+        if updater := self.__class__._default_rule_updater:
+            return updater(
+                bot=bot,
+                event=event,
+                state=self.state,
+                processor=self,
+                stack=stack,
+                dependency_cache=dependency_cache
+            )
+        return Rule()
+    
     def resolve_reject(self) -> None:
         handler = current_handler.get()
-        self.handlers.insert(0, handler)
+        self.remain_handlers.insert(0, handler)
         if REJECT_CACHE_TARGET in self.state:
             self.state[REJECT_TARGET] = self.state.pop(REJECT_CACHE_TARGET)
     
@@ -582,8 +617,8 @@ class Processor(metaclass=ProcessorMeta):
             try:
                 self.state.update(state)
                 
-                while self.handlers:
-                    handler = self.handlers.pop(0)
+                while self.remain_handlers:
+                    handler = self.remain_handlers.pop(0)
                     current_handler.set(handler)
                     logger.debug(f'运行处理函数 {handler}')
                     try:
@@ -617,12 +652,14 @@ class Processor(metaclass=ProcessorMeta):
             self.resolve_reject()
             type_ = self.update_type(bot, event, stack, dependency_cache)
             permission = self.update_permission(bot, event, stack, dependency_cache)
+            rule = self.update_rule(bot, event, stack, dependency_cache)
             
             self.new(
+                self.name,
                 type_,
-                Rule(),
+                rule,
                 permission,
-                self.handlers,
+                self.remain_handlers,
                 temp=True,
                 priority=0,
                 block=True,
@@ -635,12 +672,14 @@ class Processor(metaclass=ProcessorMeta):
         except PausedException:
             type_ = self.update_type(bot, event, stack, dependency_cache)
             permission = self.update_permission(bot, event, stack, dependency_cache)
+            rule = self.update_rule(bot, event, stack, dependency_cache)
             
             self.new(
+                self.name,
                 type_,
-                Rule(),
+                rule,
                 permission,
-                self.handlers,
+                self.remain_handlers,
                 temp=True,
                 priority=0,
                 block=True,

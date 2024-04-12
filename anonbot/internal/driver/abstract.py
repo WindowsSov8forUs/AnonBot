@@ -82,10 +82,10 @@ class Driver(abc.ABC):
             raise RuntimeError(f'Bot {bot.self_id} 发生重复连接')
         self._bots[f'{platform}:{bot.self_id}'] = bot
     
-    def _bot_disconnect(self, bot: 'Bot') -> None:
+    def _bot_disconnect(self, bot: 'Bot', platform: str) -> None:
         '''连接断开后，调用此函数来注销 bot 对象'''
-        if bot.self_id in self._bots:
-            del self._bots[bot.self_id]
+        if f'{platform}:{bot.self_id}' in self._bots:
+            del self._bots[f'{platform}:{bot.self_id}']
     
     def _cleanup(self) -> None:
         '''清理驱动器资源'''

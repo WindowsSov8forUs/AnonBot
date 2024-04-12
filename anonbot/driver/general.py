@@ -92,7 +92,7 @@ class Driver(BaseDriver):
             tasks = threading.all_tasks()
         
         for task in tasks:
-            task.cancel()
+            task.cancel(True)
         
         logger.info('应用退出成功')
         executor = threading.get_pool_executor()

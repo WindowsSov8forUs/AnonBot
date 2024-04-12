@@ -15,12 +15,18 @@ from typing import (
     cast
 )
 
-from pydantic.fields import FieldInfo
-
-from anonbot.threading import gather
+from anonbot.log import logger
+from anonbot.threading import Task, gather
 from anonbot.typing import _DependentCallable
+from anonbot.exception import SkippedException
 
-from .utils import ParameterField, check_field_type, get_typed_signature
+from .utils import (
+    PydanticUndefined,
+    FieldInfo,
+    ParameterField,
+    check_field_type,
+    get_typed_signature
+)
 
 R = TypeVar('R')
 T = TypeVar('T', bound='Dependent')
@@ -28,13 +34,10 @@ T = TypeVar('T', bound='Dependent')
 class Param(abc.ABC, FieldInfo):
     '''依赖注入参数单元'''
     
-    extra: dict[str, Any] = field(default_factory=dict)
-    
-    def __init__(self, validate: bool = False, **kwargs: Any) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, *args, validate: bool = False, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
         self.validate = validate
         '''是否需要验证参数'''
-        self.extra = kwargs
     
     @classmethod
     def _check_param(
@@ -80,7 +83,8 @@ class Dependent(Generic[R]):
             
             values = self.solve(**kwargs)
             return cast(Callable[..., R], self.call)(**values)
-        except:
+        except SkippedException as e:
+            logger.trace(f'Skipped {self} with {e}')
             raise
     
     @staticmethod
@@ -91,12 +95,8 @@ class Dependent(Generic[R]):
         params = get_typed_signature(call).parameters.values()
         
         for param in params:
-            default_value = Ellipsis
-            if param.default != param.empty:
-                default_value = param.default
-            
-            if isinstance(default_value, Param):
-                field_info = default_value
+            if isinstance(param.default, Param):
+                field_info = param.default
             else:
                 for allow_type in allow_types:
                     if field_info := allow_type._check_param(param, allow_types):
@@ -107,15 +107,14 @@ class Dependent(Generic[R]):
                         f'for function {call} with type {param.annotation}'
                     )
             
-            default_value = field_info.default
             annotation: Any = Any
-            if param.annotation != param.empty:
+            if param.annotation is not param.empty:
                 annotation = param.annotation
 
             fields.append(
-                ParameterField(
+                ParameterField.construct(
                     name=param.name,
-                    type_=annotation,
+                    annotation=annotation,
                     field_info=field_info
                 )
             )
@@ -155,15 +154,13 @@ class Dependent(Generic[R]):
         return cls(call, params, parameterless_params)
     
     def check(self, **params: Any) -> None:
-        gather(*((param._check, params) for param in self.parameterless))
-        gather(
-            *((cast(Param, param.field_info)._check, params) for param in self.params)
-        )
+        gather(*(Task(param._check, **params) for param in self.parameterless))
+        gather(*(Task(cast(Param, param.field_info)._check, **params) for param in self.params))
     
     def _solve_field(self, field: ParameterField, params: dict[str, Any]) -> Any:
         param = cast(Param, field.field_info)
         value = param._solve(**params)
-        if value is None:
+        if value is PydanticUndefined:
             value = field.get_default()
         v = check_field_type(field, value)
         return v if param.validate else value
@@ -172,7 +169,5 @@ class Dependent(Generic[R]):
         for param in self.parameterless:
             param._solve(**params)
         
-        values = gather(
-            *((self._solve_field, (field, params)) for field in self.params)
-        )
+        values = gather(*(Task(self._solve_field, field, params) for field in self.params))
         return {field.name: value for field, value in zip(self.params, values)}

@@ -5,9 +5,9 @@ import pkgutil
 import importlib
 from pathlib import Path
 from itertools import chain
-from types import ModuleType
 from importlib.abc import MetaPathFinder
-from importlib.machinery import PathFinder, SourceFileLoader, ModuleSpec
+from types import MethodType, ModuleType, FunctionType
+from importlib.machinery import ModuleSpec, PathFinder, SourceFileLoader
 from typing import Iterable, Optional, Sequence
 
 from anonbot.log import logger
@@ -22,6 +22,25 @@ from . import (
     _revert_plugin,
     _module_name_to_plugin_name
 )
+
+def _reload_module_by_recursion(module: ModuleType) -> None:
+    '''递归重载模块
+
+    递归重载模块及其子模块
+    '''
+    for name, value in module.__dict__.items():
+        if isinstance(value, ModuleType):
+            if value.__spec__ is not None:
+                importlib.reload(value)
+                _reload_module_by_recursion(value)
+        elif isinstance(value, (FunctionType, MethodType, type)):
+            sub_module_name = value.__module__
+            if sub_module_name != module.__name__:
+                sub_module = sys.modules.get(sub_module_name)
+                if sub_module is not None and sub_module.__spec__ is not None:
+                    importlib.reload(sub_module)
+                    if hasattr(sub_module, name):
+                        module.__dict__[name] = getattr(sub_module, name)
 
 class PluginManager:
     '''插件管理器'''
@@ -108,7 +127,7 @@ class PluginManager:
         
         return self.available_plugins
     
-    def load_plugin(self, name: str) -> Optional[Plugin]:
+    def load_plugin(self, name: str, reload: bool = False) -> Optional[Plugin]:
         '''加载指定插件'''
         _load_token = _plugin_load_chain.set(())
         try:
@@ -122,6 +141,9 @@ class PluginManager:
                 )
             else:
                 raise RuntimeError(f'Plugin not found: {name}!')
+            
+            if reload:
+                _reload_module_by_recursion(module)
             
             if (
                 plugin := getattr(module, '__plugin__', None)

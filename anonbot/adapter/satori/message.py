@@ -3,13 +3,39 @@ from pathlib import Path
 from base64 import b64encode
 from dataclasses import InitVar, field, dataclass
 from typing_extensions import override
-from typing import Any, NotRequired, Type, Union, Literal, Iterable, Optional, TypedDict, overload
+from typing import (
+    Any,
+    NotRequired,
+    Self,
+    Type,
+    Tuple,
+    Union,
+    Literal,
+    Iterable,
+    Optional,
+    Generator,
+    TypedDict,
+    overload
+)
 
+from anonbot.adapter import SrcBase64
 from anonbot.adapter import Message as BaseMessage
-from anonbot.internal.adapter.message import SrcBase64
 from anonbot.adapter import MessageSegment as BaseMessageSegment
 
 from .element import Element, parse, escape, param_case
+
+def _parse_src(src: Union[str, Path, SrcBase64]) -> str:
+    if isinstance(src, str):
+        # 判断链接或路径
+        if re.match(r'^https?://', src):
+            return src
+        else:
+            return Path(src).absolute().as_uri()
+    elif isinstance(src, Path):
+        return src.absolute().as_uri()
+    else:
+        bytes_data = src['data'] if isinstance(src['data'], bytes) else src['data'].getvalue() # type: ignore
+        return f'data:{src["type"]};base64,{b64encode(bytes_data).decode()}'
 
 class MessageSegment(BaseMessageSegment['Message']):
     def __str__(self) -> str:
@@ -28,15 +54,28 @@ class MessageSegment(BaseMessageSegment['Message']):
             return escape(self.data['text'])
         return f'<{self.type}{attrs}/>'
     
+    def __extra_attr__(self, *inner_attrs: str) -> str:
+        def _attr(key: str, value: Any) -> str:
+            if value is None:
+                return ''
+            key = param_case(key)
+            if value is True:
+                return f' {key}'
+            if value is False:
+                return f' no-{key}'
+            return f' {key}="{escape(value, True)}"'
+        
+        attrs = ''.join(_attr(k, v) for k, v in self.data.items() if k not in inner_attrs)
+        return f'{attrs}'
+    
     @classmethod
     @override
     def get_message_class(cls) -> Type['Message']:
         return Message
     
     @staticmethod
-    @override
     def text(text: str) -> 'Text':
-        return Text('text', {'text': text})
+        return Text('text', {'text': text, 'styles': {}})
     
     @staticmethod
     @overload
@@ -51,7 +90,6 @@ class MessageSegment(BaseMessageSegment['Message']):
     def at(*,  type: Literal['all', 'here']) -> 'At': ...
     
     @staticmethod
-    @override
     def at(
         id: Optional[str]=None,
         name: Optional[str]=None,
@@ -70,7 +108,6 @@ class MessageSegment(BaseMessageSegment['Message']):
         return At('at', data)
     
     @staticmethod
-    @override
     def sharp(id: str, name: Optional[str]=None) -> 'Sharp':
         data: SharpData = {'id': id}
         if name is not None:
@@ -78,99 +115,82 @@ class MessageSegment(BaseMessageSegment['Message']):
         return Sharp('sharp', data)
     
     @staticmethod
-    @override
     def a(href: str) -> 'A':
-        return A('a', {'text': href})
+        return A('a', {'href': href})
     
     @staticmethod
-    @override
     def img(
         src: Union[str, Path, SrcBase64],
         title: Optional[str] = None,
         cache: Optional[bool] = None,
-        timeout: Optional[str] = None
+        timeout: Optional[str] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None
     ) -> 'Img':
-        if isinstance(src, str):
-            # 判断链接或路径
-            if re.match(r'^https?://', src):
-                data: ImgData = {'src': src}
-            else:
-                data: ImgData = {'src': Path(src).absolute().as_uri()}
-        elif isinstance(src, Path):
-            data: ImgData = {'src': src.absolute().as_uri()}
-        else:
-            bytes_data = src['data'] if isinstance(src['data'], bytes) else src['data'].getvalue() # type: ignore
-            data: ImgData = {'src': f'data:{src["mime"]};base64,{b64encode(bytes_data).decode()}'}
+        data: ImgData = {'src': _parse_src(src)}
         if title is not None:
             data['title'] = title
         if cache is not None:
             data['cache'] = cache
         if timeout is not None:
             data['timeout'] = timeout
+        if width is not None:
+            data['width'] = width
+        if height is not None:
+            data['height'] = height
         return Img('img', data)
     
     @staticmethod
-    @override
     def audio(
         src: Union[str, Path, SrcBase64],
         title: Optional[str] = None,
         cache: Optional[bool] = None,
         timeout: Optional[str] = None,
+        duration: Optional[float] = None,
         poster: Optional[str] = None
     ) -> 'Audio':
-        if isinstance(src, str):
-            # 判断链接或路径
-            if re.match(r'^https?://', src):
-                data: AudioData = {'src': src}
-            else:
-                data: AudioData = {'src': Path(src).absolute().as_uri()}
-        elif isinstance(src, Path):
-            data: AudioData = {'src': src.absolute().as_uri()}
-        else:
-            bytes_data = src['data'] if isinstance(src['data'], bytes) else src['data'].getvalue() # type: ignore
-            data: AudioData = {'src': f'data:{src["mime"]};base64,{b64encode(bytes_data).decode()}'}
+        data: AudioData = {'src': _parse_src(src)}
         if title is not None:
             data['title'] = title
         if cache is not None:
             data['cache'] = cache
         if timeout is not None:
             data['timeout'] = timeout
+        if duration is not None:
+            data['duration'] = duration
         if poster is not None:
             data['poster'] = poster
         return Audio('audio', data)
     
     @staticmethod
-    @override
     def video(
         src: Union[str, Path, SrcBase64],
         title: Optional[str] = None,
         cache: Optional[bool] = None,
         timeout: Optional[str] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        duration: Optional[float] = None,
         poster: Optional[str] = None
     ) -> 'Video':
-        if isinstance(src, str):
-            # 判断链接或路径
-            if re.match(r'^https?://', src):
-                data: VideoData = {'src': src}
-            else:
-                data: VideoData = {'src': Path(src).absolute().as_uri()}
-        elif isinstance(src, Path):
-            data: VideoData = {'src': src.absolute().as_uri()}
-        else:
-            bytes_data = src['data'] if isinstance(src['data'], bytes) else src['data'].getvalue() # type: ignore
-            data: VideoData = {'src': f'data:{src["mime"]};base64,{b64encode(bytes_data).decode()}'}
+        data: VideoData = {'src': _parse_src(src)}
         if title is not None:
             data['title'] = title
         if cache is not None:
             data['cache'] = cache
         if timeout is not None:
             data['timeout'] = timeout
+        if width is not None:
+            data['width'] = width
+        if height is not None:
+            data['height'] = height
+        if duration is not None:
+            data['duration'] = duration
         if poster is not None:
             data['poster'] = poster
         return Video('video', data)
     
     @staticmethod
-    @override
     def file(
         src: Union[str, Path, SrcBase64],
         title: Optional[str] = None,
@@ -178,17 +198,7 @@ class MessageSegment(BaseMessageSegment['Message']):
         timeout: Optional[str] = None,
         poster: Optional[str] = None
     ) -> 'File':
-        if isinstance(src, str):
-            # 判断链接或路径
-            if re.match(r'^https?://', src):
-                data: FileData = {'src': src}
-            else:
-                data: FileData = {'src': Path(src).absolute().as_uri()}
-        elif isinstance(src, Path):
-            data: FileData = {'src': src.absolute().as_uri()}
-        else:
-            bytes_data = src['data'] if isinstance(src['data'], bytes) else src['data'].getvalue() # type: ignore
-            data: FileData = {'src': f'data:{src["mime"]};base64,{b64encode(bytes_data).decode()}'}
+        data: FileData = {'src': _parse_src(src)}
         if title is not None:
             data['title'] = title
         if cache is not None:
@@ -200,57 +210,73 @@ class MessageSegment(BaseMessageSegment['Message']):
         return File('file', data)
     
     @staticmethod
-    @override
-    def b(child: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Style':
-        return Style('style', {'children': MessageSegment.text(child) if isinstance(child, str) else child, 'styles': ['b']})
+    def b(text: Union[str, 'Text']) -> 'Text':
+        if isinstance(text, str):
+            return Text('text', {'text': text, 'styles': {(0, len(text)): ['b']}})
+        text.data['styles'].setdefault((0, len(text.data['text'])), []).insert(0, 'b')
+        return text
     
     @staticmethod
-    @override
-    def i(child: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Style':
-        return Style('style', {'children': MessageSegment.text(child) if isinstance(child, str) else child, 'styles': ['i']})
+    def i(text: Union[str, 'Text']) -> 'Text':
+        if isinstance(text, str):
+            return Text('text', {'text': text, 'styles': {(0, len(text)): ['i']}})
+        text.data['styles'].setdefault((0, len(text.data['text'])), []).insert(0, 'i')
+        return text
     
     @staticmethod
-    @override
-    def u(child: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Style':
-        return Style('style', {'children': MessageSegment.text(child) if isinstance(child, str) else child, 'styles': ['u']})
+    def u(text: Union[str, 'Text']) -> 'Text':
+        if isinstance(text, str):
+            return Text('text', {'text': text, 'styles': {(0, len(text)): ['u']}})
+        text.data['styles'].setdefault((0, len(text.data['text'])), []).insert(0, 'u')
+        return text
     
     @staticmethod
-    @override
-    def s(child: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Style':
-        return Style('style', {'children': MessageSegment.text(child) if isinstance(child, str) else child, 'styles': ['s']})
+    def s(text: Union[str, 'Text']) -> 'Text':
+        if isinstance(text, str):
+            return Text('text', {'text': text, 'styles': {(0, len(text)): ['s']}})
+        text.data['styles'].setdefault((0, len(text.data['text'])), []).insert(0, 's')
+        return text
     
     @staticmethod
-    @override
-    def spl(child: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Style':
-        return Style('style', {'children': MessageSegment.text(child) if isinstance(child, str) else child, 'styles': ['spl']})
+    def spl(text: Union[str, 'Text']) -> 'Text':
+        if isinstance(text, str):
+            return Text('text', {'text': text, 'styles': {(0, len(text)): ['spl']}})
+        text.data['styles'].setdefault((0, len(text.data['text'])), []).insert(0, 'spl')
+        return text
     
     @staticmethod
-    @override
-    def code(child: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Style':
-        return Style('style', {'children': MessageSegment.text(child) if isinstance(child, str) else child, 'styles': ['code']})
+    def code(text: Union[str, 'Text']) -> 'Text':
+        if isinstance(text, str):
+            return Text('text', {'text': text, 'styles': {(0, len(text)): ['code']}})
+        text.data['styles'].setdefault((0, len(text.data['text'])), []).insert(0, 'code')
+        return text
     
     @staticmethod
-    @override
-    def sup(child: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Style':
-        return Style('style', {'children': MessageSegment.text(child) if isinstance(child, str) else child, 'styles': ['sup']})
+    def sup(text: Union[str, 'Text']) -> 'Text':
+        if isinstance(text, str):
+            return Text('text', {'text': text, 'styles': {(0, len(text)): ['sup']}})
+        text.data['styles'].setdefault((0, len(text.data['text'])), []).insert(0, 'sup')
+        return text
     
     @staticmethod
-    @override
-    def sub(child: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Style':
-        return Style('style', {'children': MessageSegment.text(child) if isinstance(child, str) else child, 'styles': ['sub']})
+    def sub(text: Union[str, 'Text']) -> 'Text':
+        if isinstance(text, str):
+            return Text('text', {'text': text, 'styles': {(0, len(text)): ['sub']}})
+        text.data['styles'].setdefault((0, len(text.data['text'])), []).insert(0, 'sub')
+        return text
     
     @staticmethod
-    @override
     def br() -> 'Br':
         return Br('br', {'text': '\n'})
     
     @staticmethod
-    @override
-    def p(child: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Style':
-        return Style('style', {'children': MessageSegment.text(child) if isinstance(child, str) else child, 'styles': ['p']})
+    def p(text: Union[str, 'Text']) -> 'Text':
+        if isinstance(text, str):
+            return Text('text', {'text': text, 'styles': {(0, len(text)): ['p']}})
+        text.data['styles'].setdefault((0, len(text.data['text'])), []).insert(0, 'p')
+        return text
     
     @staticmethod
-    @override
     def message(
         id: Optional[str]=None,
         forward: Optional[bool]=None,
@@ -266,21 +292,13 @@ class MessageSegment(BaseMessageSegment['Message']):
         return RenderMessage('message', data) # type: ignore
     
     @staticmethod
-    @override
-    def quote(
-        id: Optional[str]=None,
-        forward: Optional[bool]=None,
-        message: Optional[Union[str, 'MessageSegment', Iterable['MessageSegment']]]=None
-    ) -> 'Quote':
-        data = {'content': Message()}
-        if id is not None or forward is not None:
-            data['content'] += MessageSegment.message(id, forward)
-        if message:
-            data['content'] += message
+    def quote(content: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Quote':
+        data = {
+            'content': Message(content)
+        }
         return Quote('quote', data) # type: ignore
     
     @staticmethod
-    @override
     def author(
         id: Optional[str]=None,
         name: Optional[str]=None,
@@ -296,7 +314,6 @@ class MessageSegment(BaseMessageSegment['Message']):
         return Author('author', data) # type: ignore
     
     @staticmethod
-    @override
     def button(
         id: Optional[str]=None,
         type: Optional[Literal['action', 'link', 'input']]=None,
@@ -316,6 +333,10 @@ class MessageSegment(BaseMessageSegment['Message']):
         if theme is not None:
             data['theme'] = theme
         return Button('button', data) # type: ignore
+    
+    @staticmethod
+    def custom(type: str, **kwargs: Any) -> 'Custom':
+        return Custom(type, kwargs)
     
     @staticmethod
     def passive(
@@ -344,14 +365,79 @@ class MessageSegment(BaseMessageSegment['Message']):
 
 class TextData(TypedDict):
     text: str
+    styles: dict[Tuple[int, int], list[str]]
 
 @dataclass
 class Text(MessageSegment):
     data: TextData = field(default_factory=dict) # type: ignore
     
+    def __post_init__(self) -> None:
+        if 'styles' not in self.data:
+            self.data['styles'] = {}
+    
+    def __merge__(self) -> None:
+        data: dict[int, list[str]] = {}
+        styles = self.data['styles']
+        if not styles:
+            return
+        for scale, _styles in styles.items():
+            for i in range(*scale):
+                if i not in data:
+                    data[i] = _styles[:]
+                else:
+                    data[i].extend(_style for _style in _styles if _style not in data[i])
+        styles.clear()
+        data1: dict[str, list[int]] = {}
+        for i, _styles in data.items():
+            key = '\x01'.join(_styles)
+            data1.setdefault(key, []).append(i)
+        data.clear()
+        data2: dict[Tuple[int, int], list[str]] = {}
+        for key, indexes in data1.items():
+            start = indexes[0]
+            end = start
+            for i in indexes[1:]:
+                if i - end == 1:
+                    end = i
+                else:
+                    data2[(start, end + 1)] = key.split('\x01')
+                    start = end = i
+            if end >= start:
+                data2[(start, end + 1)] = key.split('\x01')
+        for scale in sorted(data2.keys()):
+            styles[scale] = data2[scale]
+    
+    def mark(self, start: int, end: int, *styles: str) -> Self:
+        _styles = self.data['styles'].setdefault((start, end), [])
+        for style in styles:
+            style = STYLE_TYPE_MAP.get(style, style)
+            if style not in _styles:
+                _styles.append(style)
+        self.__merge__()
+        return self
+    
     @override
     def __str__(self) -> str:
-        return escape(self.data['text'])
+        result: list[str] = []
+        text = self.data['text']
+        styles = self.data['styles']
+        if not styles:
+            return escape(self.data['text'])
+        self.__merge__()
+        scales = sorted(styles.keys(), key=lambda x: x[0])
+        left = scales[0][0]
+        result.append(escape(text[:left]))
+        for scale in scales:
+            prefix = ''.join(f'<{style}>' for style in styles[scale])
+            suffix = ''.join(f'</{style}>' for style in reversed(styles[scale]))
+            result.append(prefix + escape(text[scale[0]:scale[1]]) + suffix)
+        right = scales[-1][1]
+        result.append(escape(text[right:]))
+        text = ''.join(result)
+        pat = re.compile(r'</(\w+)(?<!/p)><\1>')
+        for _ in range(max(map(len, styles.values()))):
+            text = pat.sub('', text)
+        return text
     
     @override
     def is_text(self) -> bool:
@@ -376,26 +462,22 @@ class Sharp(MessageSegment):
     data: SharpData = field(default_factory=dict) # type: ignore
 
 class AData(TypedDict):
-    text: str
+    href: str
 
 class A(MessageSegment):
     data: AData = field(default_factory=dict) # type: ignore
     
     @override
-    def __str__(self) -> str:
-        if 'display' in self.data:
-            return f'<a href="{escape(self.data["text"])}" display="{escape(self.data["display"])}"/>'
-        return f'<a href="{escape(self.data["text"])}/>'
-    
-    @override
     def is_text(self) -> bool:
         return True
 
-class ImgData(TypedDict):
+class SrcData(TypedDict):
     src: str
     title: NotRequired[str]
     cache: NotRequired[bool]
     timeout: NotRequired[str]
+
+class ImgData(SrcData, total=False):
     width: NotRequired[int]
     height: NotRequired[int]
 
@@ -408,12 +490,8 @@ class Img(MessageSegment):
         if extra is not None:
             self.data.update(extra) # type: ignore
 
-class AudioData(TypedDict):
-    src: str
-    title: NotRequired[str]
-    cache: NotRequired[bool]
-    timeout: NotRequired[str]
-    duration: NotRequired[int]
+class AudioData(SrcData, total=False):
+    duration: NotRequired[float]
     poster: NotRequired[str]
 
 @dataclass
@@ -425,15 +503,11 @@ class Audio(MessageSegment):
         if extra is not None:
             self.data.update(extra) # type: ignore
 
-class VideoData(TypedDict):
-    src: str
-    title: NotRequired[str]
-    cache: NotRequired[bool]
-    timeout: NotRequired[str]
-    duration: NotRequired[int]
-    poster: NotRequired[str]
+class VideoData(SrcData, total=False):
     width: NotRequired[int]
     height: NotRequired[int]
+    duration: NotRequired[float]
+    poster: NotRequired[str]
 
 @dataclass
 class Video(MessageSegment):
@@ -444,11 +518,7 @@ class Video(MessageSegment):
         if extra is not None:
             self.data.update(extra) # type: ignore
 
-class FileData(TypedDict):
-    src: str
-    title: NotRequired[str]
-    cache: NotRequired[bool]
-    timeout: NotRequired[str]
+class FileData(SrcData, total=False):
     poster: NotRequired[str]
 
 @dataclass
@@ -460,27 +530,10 @@ class File(MessageSegment):
         if extra is not None:
             self.data.update(extra) # type: ignore
 
-class StyleData(TypedDict):
-    children: 'Message'
-    styles: list[str]
-
-class Style(MessageSegment):
-    data: StyleData = field(default_factory=dict) # type: ignore
-    
-    @override
-    def __str__(self) -> str:
-        prefix = ''.join(f'<{style}>' for style in self.data['styles'])
-        suffix = ''.join(f'</{style}>' for style in reversed(self.data['styles']))
-        return f'{prefix}{self.data["children"]}{suffix}'
-    
-    @override
-    def is_text(self) -> bool:
-        return True
-
 class Br(MessageSegment):
     @override
     def __str__(self) -> str:
-        return '<br/>'
+        return f'<br{self.__extra_attr__()}/>'
     
     @override
     def is_text(self) -> bool:
@@ -502,10 +555,11 @@ class RenderMessage(MessageSegment):
             attr.append(f' id="{escape(self.data["id"])}"')
         if self.data.get('forward'):
             attr.append(' forward')
+        _extra = self.__extra_attr__('id', 'forward', 'content')
         if 'content' not in self.data:
-            return f'<{self.type}{"".join(attr)}/>'
+            return f'<{self.type}{"".join(attr)}{_extra}/>'
         else:
-            return f'<{self.type}{"".join(attr)}>{self.data["content"]}</{self.type}>'
+            return f'<{self.type}{"".join(attr)}{_extra}>{self.data["content"]}</{self.type}>'
 
 class QuoteData(TypedDict):
     content: 'Message'
@@ -516,7 +570,7 @@ class Quote(MessageSegment):
     
     @override
     def __str__(self) -> str:
-        return f'<{self.type}>{self.data["content"]}</{self.type}>'
+        return f'<{self.type}{self.__extra_attr__("content")}>{self.data["content"]}</{self.type}>'
 
 class AuthorData(TypedDict):
     id: str
@@ -546,6 +600,43 @@ class PassiveData(TypedDict):
 class Passive(MessageSegment):
     data: PassiveData = field(default_factory=dict) # type: ignore
 
+@dataclass
+class Custom(MessageSegment):
+    data: dict[str, Any] = field(default_factory=dict)
+    
+    @override
+    def __str__(self) -> str:
+        def _attr(key: str, value: Any) -> str:
+            if value is None:
+                return ''
+            key = param_case(key)
+            if value is True:
+                return f' {key}'
+            if value is False:
+                return f' no-{key}'
+            return f' {key}="{escape(value, True)}"'
+        
+        if self.is_text():
+            return escape(self.data['text'])
+        _data: dict[str, Any] = {}
+        _children: list[Message] = []
+        for key, value in self.data.items():
+            if isinstance(value, Message):
+                _children.append(value)
+            else:
+                _data[key] = value
+        attrs = ''.join(_attr(k, v) for k, v in _data.items())
+        if len(_children) > 0:
+            return f'<{self.type}{attrs}>{"".join(str(child) for child in _children)}</{self.type}>'
+        return f'<{self.type}{attrs}/>'
+    
+    @override
+    def is_text(self) -> bool:
+        if len(self.data) == 1:
+            for value in self.data.values():
+                return isinstance(value, str)
+        return False
+
 ELEMENT_TYPE_MAP = {
     'text': (Text, 'text'),
     'at': (At, 'at'),
@@ -558,7 +649,7 @@ ELEMENT_TYPE_MAP = {
     'author': (Author, 'author')
 }
 
-STYLE_TYE_MAP = {
+STYLE_TYPE_MAP = {
     'b': 'b',
     'strong': 'b',
     'i': 'i',
@@ -574,6 +665,44 @@ STYLE_TYE_MAP = {
     'p': 'p'
 }
 
+def handle(element: Element, upper_style: Optional[list[str]] = None) -> Generator[Any, None, None]:
+    tag = element.tag()
+    if tag in ELEMENT_TYPE_MAP:
+        seg_cls, seg_type = ELEMENT_TYPE_MAP[tag]
+        yield seg_cls(seg_type, element.attrs.copy())
+    elif tag in ('a', 'link'):
+        attrs = element.attrs.copy()
+        yield A('a', attrs | {'href': attrs.get('href', '')})
+    elif tag in STYLE_TYPE_MAP:
+        style = STYLE_TYPE_MAP[tag]
+        for child in element.children:
+            child_tag = child.tag()
+            if child_tag == 'text':
+                yield Text(
+                    'text',
+                    {
+                        'text': child.attrs['text'],
+                        'styles': {(0, len(child.attrs['text'])): [*(upper_style or []), style]}
+                    }
+                )
+            else:
+                yield from handle(child, [*(upper_style or []), style])
+    elif tag in ('br', 'newline'):
+        yield Br('br', {'text': '\n'})
+    elif tag in ('message', 'quote'):
+        data = element.attrs.copy()
+        if element.children:
+            data['content'] = Message.from_satori_element(element.children)
+        if tag == 'message':
+            yield RenderMessage('message', data) # type: ignore
+        else:
+            yield Quote('quote', data) # type: ignore
+    else:
+        data = element.attrs.copy()
+        if element.children:
+            data['content'] = Message.from_satori_element(element.children)
+        yield Custom(element.tag(), data)
+
 class Message(BaseMessage[MessageSegment]):
     @classmethod
     @override
@@ -581,30 +710,12 @@ class Message(BaseMessage[MessageSegment]):
         return MessageSegment
     
     @override
-    def __str__(self) -> str:
-        text = ''.join(str(seg) for seg in self)
-        
-        def calc_depth(msg: 'Message') -> int:
-            depth = 0
-            for seg in msg:
-                if seg.type == 'style':
-                    depth = max(depth, len(seg.data['styles']))
-                if seg.type == 'message' or seg.type == 'quote':
-                    depth = max(depth, calc_depth(seg.data['content']))
-            return depth
-        
-        pat = re.compile(r'</(\w+)(?<!/p)><\1>')
-        for _ in range(calc_depth(self)):
-            text = pat.sub('', text)
-        return text
-    
-    @override
     def __add__(self, other: Union[str, MessageSegment, Iterable[MessageSegment]]) -> 'Message':
-        return super().__add__(MessageSegment.text(other) if isinstance(other, str) else other)
+        return super().__add__(MessageSegment.text(other) if isinstance(other, str) else other).__merge_text__()
     
     @override
     def __radd__(self, other: Union[str, MessageSegment, Iterable[MessageSegment]]) -> 'Message':
-        return super().__radd__(MessageSegment.text(other) if isinstance(other, str) else other)
+        return super().__radd__(MessageSegment.text(other) if isinstance(other, str) else other).__merge_text__()
     
     @staticmethod
     @override
@@ -615,41 +726,31 @@ class Message(BaseMessage[MessageSegment]):
     def from_satori_element(cls, elements: list[Element]) -> 'Message':
         message = Message()
         
-        def handle(element: Element, upper_styles: Optional[list[str]] = None):
-            tag = element.tag()
-            if tag in ELEMENT_TYPE_MAP:
-                seg_cls, seg_type = ELEMENT_TYPE_MAP[tag]
-                yield seg_cls(seg_type, element.attrs.copy())
-            elif tag in ('a', 'link'):
-                yield A('a', {'text': element.attrs['href']})
-            elif tag == 'button':
-                yield Button('button', {**element.attrs}) # type: ignore
-            elif tag in STYLE_TYE_MAP:
-                style = STYLE_TYE_MAP[tag]
-                for child in element.children:
-                    child_tag = child.tag()
-                    if child_tag == 'text':
-                        yield Style(
-                            'style', {'text': child.attrs['text'], 'styles': [*(upper_styles or []), style]}
-                        )
-                    else:
-                        yield from handle(child, [*(upper_styles or []), style])
-            elif tag in ('br', 'newline'):
-                yield Br('br', {'text': '\n'})
-            elif tag in ('message', 'quote'):
-                data = element.attrs.copy()
-                if element.children:
-                    data['content'] = Message.from_satori_element(element.children)
-                if tag == 'message':
-                    yield RenderMessage('message', data) # type: ignore
-                else:
-                    yield Quote('quote', data) # type: ignore
-        
         for element in elements:
             message.extend(handle(element))
         
-        return message
+        return message.__merge_text__()
     
     @override
     def extract_plain_text(self) -> str:
         return ''.join(seg.data['text'] for seg in self if seg.is_text())
+
+    def __merge_text__(self) -> Self:
+        if not self:
+            return self
+        result = []
+        last = self[0]
+        for seg in self[1:]:
+            if last.type == 'text' and seg.type == 'text':
+                assert isinstance(last, Text)
+                _len = len(last.data['text'])
+                last.data['text'] += seg.data['text']
+                for scale, styles in seg.data['styles'].items():
+                    last.data['styles'][(scale[0] + _len, scale[1] + _len)] = styles[:]
+            else:
+                result.append(last)
+                last = seg
+        result.append(last)
+        self.clear()
+        self.extend(result)
+        return self

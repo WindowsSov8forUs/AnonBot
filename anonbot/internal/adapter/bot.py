@@ -18,6 +18,7 @@ from .models import (
 if TYPE_CHECKING:
     from .event import Event
     from .adapter import Adapter
+    from .uni import Message as UniMessage
     from .message import Message, MessageSegment
     
     class _ApiCall(Protocol):
@@ -73,16 +74,22 @@ class Bot(abc.ABC):
     def send(
         self,
         event: 'Event',
-        message: Union[str, 'Message', 'MessageSegment'],
+        message: Union[str, 'Message', 'MessageSegment', 'UniMessage'],
         **kwargs: Any
     ) -> Any:
         '''调用机器人基础发送消息接口
 
         参数:
             event (Event): 上报事件
-            message (str | Message | MessageSegment): 要发送的消息
+            message (str | Message | MessageSegment | UniMessage): 要发送的消息
             **kwargs (Any): 任意额外参数
         '''
+        raise NotImplementedError
+    
+    @staticmethod
+    @abc.abstractmethod
+    def parse_uni_message(uni_message: 'UniMessage') -> 'Message':
+        '''将统一消息转换为消息类'''
         raise NotImplementedError
     
     @abc.abstractmethod

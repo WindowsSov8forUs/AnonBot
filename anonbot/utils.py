@@ -23,6 +23,8 @@ from typing import (
 from pydantic import GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
+from anonbot.threading import Task
+
 if TYPE_CHECKING:
     class _CustomValidationClass(Protocol):
         @classmethod
@@ -97,34 +99,31 @@ def is_gen_callable(call: Callable[..., Any]) -> bool:
 
 @overload
 def run_with_catch(
-    call: Callable[..., T],
+    call: Task[T],
     exc: Tuple[Type[Exception], ...],
-    return_on_err: None = None,
-    *args: Any,
-    **kwargs: Any
+    return_on_err: None = None
 ) -> Union[T, None]:
     ...
 
 @overload
 def run_with_catch(
-    call: Callable[..., T],
+    call: Task[T],
     exc: Tuple[Type[Exception], ...],
-    return_on_err: R,
-    *args: Any,
-    **kwargs: Any
+    return_on_err: R
 ) -> Union[T, R]:
     ...
 
 def run_with_catch(
-    call: Callable[..., T],
+    call: Task[T],
     exc: Tuple[Type[Exception], ...],
-    return_on_err: Optional[R] = None,
-    *args: Any,
-    **kwargs: Any
+    return_on_err: Optional[R] = None
 ) -> Optional[Union[T, R]]:
     '''运行函数并当遇到指定异常时返回指定值'''
     try:
-        return call(*args, **kwargs)
+        result = call()
+        if isinstance(result, BaseException):
+            raise result
+        return result
     except exc:
         return return_on_err
 

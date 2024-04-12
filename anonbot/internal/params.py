@@ -17,15 +17,21 @@ from typing import (
     get_origin
 )
 
-from pydantic.fields import FieldInfo
+from pydantic_core import PydanticUndefined
+from pydantic.fields import FieldInfo as _PydanticFieldInfo
 
-from anonbot.dependency.utils import ParameterField, check_field_type
 from anonbot.dependency import Param, Dependent
 from anonbot.typing import StateType, HandlerType, DependencyCache
 from anonbot.utils import (
     get_name,
     is_gen_callable,
     generic_check_issubclass
+)
+from anonbot.dependency.utils import (
+    FieldInfo,
+    ParameterField,
+    check_field_type,
+    extract_field_info
 )
 
 if TYPE_CHECKING:
@@ -55,7 +61,7 @@ class DependsInner:
         dependency: Optional[HandlerType] = None,
         *,
         use_cache: bool = True,
-        validate: Union[bool, FieldInfo] = False
+        validate: Union[bool, _PydanticFieldInfo] = False
     ) -> None:
         self.dependency = dependency
         self.use_cache = use_cache
@@ -71,7 +77,7 @@ def Depends(
     dependency: Optional[HandlerType] = None,
     *,
     use_cache: bool = True,
-    validate: Union[bool, FieldInfo] = False
+    validate: Union[bool, _PydanticFieldInfo] = False
 ) -> Any:
     '''子依赖装饰器
 
@@ -85,24 +91,27 @@ def Depends(
 class DependParam(Param):
     '''子依赖注入参数'''
     
+    def __init__(self, *args: Any, dependent: Dependent[Any], use_cache: bool, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.dependent = dependent
+        self.use_cache = use_cache
+    
     def __repr__(self) -> str:
-        return f'Depends({self.extra["dependent"]})'
+        return f'Depends({self.dependent}, use_cache={self.use_cache})'
     
     @classmethod
     def _from_field(
-        cls, sub_dependent: Dependent, use_cache: bool, validate: Union[bool, FieldInfo]
+        cls, sub_dependent: Dependent, use_cache: bool, validate: Union[bool, _PydanticFieldInfo]
     ) -> Self:
         kwargs = {}
         if isinstance(validate, FieldInfo):
-            kwargs.update((k, getattr(validate, k)) for k in EXTRA_FIELD_INFO)
+            kwargs.update(extract_field_info(validate))
         
-        return cls(
-            validate=bool(validate),
-            default=Ellipsis,
-            **kwargs,
-            dependent=sub_dependent,
-            use_cache=use_cache
-        )
+        kwargs['validate'] = bool(validate)
+        kwargs['dependent'] = sub_dependent
+        kwargs['use_cache'] = use_cache
+        
+        return cls(**kwargs)
     
     @classmethod
     @override
@@ -155,10 +164,10 @@ class DependParam(Param):
         dependency_cache: Optional[DependencyCache] = None,
         **kwargs: Any
     ) -> Any:
-        use_cache: bool = self.extra['use_cache']
+        use_cache: bool = self.use_cache
         dependency_cache = {} if dependency_cache is None else dependency_cache
         
-        sub_dependent: Dependent = self.extra['dependent']
+        sub_dependent: Dependent = self.dependent
         call = cast(Callable[..., Any], sub_dependent.call)
         
         sub_values = sub_dependent.solve(
@@ -179,18 +188,21 @@ class DependParam(Param):
     
     @override
     def _check(self, **kwargs: Any) -> None:
-        sub_dependent: Dependent = self.extra['dependent']
-        sub_dependent.check(**kwargs)
+        self.dependent.check(**kwargs)
 
 class BotParam(Param):
     '''`anonbot.adapters.Bot` 注入参数'''
+    
+    def __init__(self, *args: Any, checker: Optional[ParameterField] = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.checker = checker
     
     def __repr__(self) -> str:
         return (
             'BotParam('
             + (
-                repr(cast(ParameterField, checker).type_)
-                if (checker := self.extra.get('checker'))
+                repr(self.checker.annotation)
+                if self.checker is not None
                 else ''
             )
             + ')'
@@ -206,9 +218,9 @@ class BotParam(Param):
         if generic_check_issubclass(param.annotation, Bot):
             checker: Optional[ParameterField] = None
             if param.annotation is not Bot:
-                checker = ParameterField(
+                checker = ParameterField.construct(
                     name=param.name,
-                    type_=param.annotation,
+                    annotation=param.annotation,
                     field_info=FieldInfo()
                 )
             return cls(default=Ellipsis, checker=checker)
@@ -221,18 +233,22 @@ class BotParam(Param):
     
     @override
     def _check(self, bot: 'Bot', **kwargs: Any) -> None:
-        if checker := self.extra.get('checker'):
-            check_field_type(checker, bot)
+        if self.checker is not None:
+            check_field_type(self.checker, bot)
 
 class EventParam(Param):
     '''`anonbot.adapters.Event` 注入参数'''
+    
+    def __init__(self, *args: Any, checker: Optional[ParameterField] = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.checker = checker
     
     def __repr__(self) -> str:
         return (
             'EventParam('
             + (
-                repr(cast(ParameterField, checker).type_)
-                if (checker := self.extra.get('checker'))
+                repr(self.checker.annotation)
+                if self.checker is not None
                 else ''
             )
             + ')'
@@ -246,9 +262,9 @@ class EventParam(Param):
         if generic_check_issubclass(param.annotation, Event):
             checker: Optional[ParameterField] = None
             if param.annotation is not Event:
-                checker = ParameterField(
+                checker = ParameterField.construct(
                     name=param.name,
-                    type_=param.annotation,
+                    annotation=param.annotation,
                     field_info=FieldInfo()
                 )
             return cls(default=Ellipsis, checker=checker)
@@ -261,8 +277,8 @@ class EventParam(Param):
     
     @override
     def _check(self, event: 'Event', **kwargs: Any) -> None:
-        if checker := self.extra.get('checker'):
-            check_field_type(checker, event)
+        if self.checker is not None:
+            check_field_type(self.checker, event)
 
 class StateParam(Param):
     '''事件处理状态注入参数'''
@@ -285,8 +301,16 @@ class StateParam(Param):
 class ProcessorParam(Param):
     '''事件处理器注入参数'''
     
+    def __init__(self, *args: Any, checker: Optional[ParameterField] = None, **kwargs: Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.checker = checker
+    
     def __repr__(self) -> str:
-        return 'ProcessorParam()'
+        return (
+            'ProcessorParam('
+            + (repr(self.checker.annotation) if self.checker is not None else '')
+            + ')'
+        )
     
     @classmethod
     @override
@@ -296,9 +320,9 @@ class ProcessorParam(Param):
         if generic_check_issubclass(param.annotation, Processor):
             checker: Optional[ParameterField] = None
             if param.annotation is not Processor:
-                checker = ParameterField(
+                checker = ParameterField.construct(
                     name=param.name,
-                    type_=param.annotation,
+                    annotation=param.annotation,
                     field_info=FieldInfo()
                 )
             return cls(default=Ellipsis, checker=checker)
@@ -311,15 +335,15 @@ class ProcessorParam(Param):
     
     @override
     def _check(self, processor: 'Processor', **kwargs: Any) -> None:
-        if checker := self.extra.get('checker'):
-            check_field_type(checker, processor)
+        if self.checker is not None:
+            check_field_type(self.checker, processor)
 
 class ArgInner:
     def __init__(
         self, key: Optional[str], type: Literal['message', 'str', 'plaintext']
     ) -> None:
-        self.key = key
-        self.type = type
+        self.key: Optional[str] = key
+        self.type: Literal['message', 'str', 'plaintext'] = type
     
     def __repr__(self) -> str:
         return f'ArgInner(key={self.key!r}, type={self.type!r})'
@@ -339,30 +363,57 @@ def ArgPlainText(key: Optional[str] = None) -> str:
 class ArgParam(Param):
     '''Arg 注入参数'''
     
+    def __init__(
+        self,
+        *args: Any,
+        key: str,
+        type: Literal['message', 'str', 'plaintext'],
+        **kwargs: Any
+    ) -> None:
+        super().__init__(*args, **kwargs)
+        self.key = key
+        self.type = type
+    
     def __repr__(self) -> str:
-        return f'ArgParam(key={self.extra["key"]!r}, type={self.extra["type"]!r})'
+        return f'ArgParam(key={self.key!r}, type={self.type!r})'
     
     @classmethod
     @override
     def _check_param(cls, param: inspect.Parameter, allow_types: Tuple[Type[Param], ...]) -> Optional[Self]:
         if isinstance(param.default, ArgInner):
-            return cls(default=Ellipsis, key=param.default.key or param.name, type=param.default.type)
+            return cls(key=param.default.key or param.name, type=param.default.type)
         elif get_origin(param.annotation) is Annotated:
             for arg in get_args(param.annotation)[:0:-1]:
                 if isinstance(arg, ArgInner):
-                    return cls(default=Ellipsis, key=arg.key or param.name, type=arg.type)
+                    return cls(key=arg.key or param.name, type=arg.type)
     
     def _solve(self, processor: 'Processor', **kwargs: Any) -> Any:
-        key: str = self.extra['key']
-        message = processor.get_arg(key)
+        message = processor.get_arg(self.key)
         if message is None:
             return message
-        if self.extra['type'] == 'message':
+        if self.type == 'message':
             return message
-        elif self.extra['type'] == 'str':
+        elif self.type == 'str':
             return str(message)
         else:
             return message.extract_plain_text()
+
+class ExceptionParam(Param):
+    '''Exception 异常注入参数'''
+    def __repr__(self) -> str:
+        return 'ExceptionParam()'
+    
+    @classmethod
+    @override
+    def _check_param(cls, param: inspect.Parameter, allow_types: Tuple[Param]) -> Optional[Self]:
+        if generic_check_issubclass(param.annotation, Exception):
+            return cls()
+        elif param.annotation == param.empty and param.name == 'exception':
+            return cls()
+    
+    @override
+    def _solve(self, exception: Optional[Exception] = None, **kwargs: Any) -> Any:
+        return exception
 
 class DefaultParam(Param):
     '''默认值注入参数'''
@@ -378,7 +429,7 @@ class DefaultParam(Param):
     
     @override
     def _solve(self, **kwargs: Any) -> Any:
-        return None
+        return PydanticUndefined
 
 __autodoc__ = {
     "DependsInner": False,

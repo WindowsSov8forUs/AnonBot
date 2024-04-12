@@ -26,7 +26,7 @@ class TypeMisMatch(SkippedException):
     def __repr__(self) -> str:
         return (
             f'TypeMisMatch(param={self.param}, '
-            f'type={self.param.type_}, value={self.value!r})'
+            f'type={repr(self.param.annotation)}, value={self.value!r})'
         )
 
 class StopPropagation(ProcessException):
@@ -34,6 +34,18 @@ class StopPropagation(ProcessException):
 
 class ProcessorException(AnonBotException):
     '''AnonBot 事件处理器异常基类'''
+
+class IgnoredException(ProcessException):
+    '''指示 AnonBot 应该忽略该事件
+
+    参数:
+        reason (Any): 忽略的原因
+    '''
+    def __init__(self, reason: Any) -> None:
+        self.reason: Any = reason
+    
+    def __repr__(self) -> str:
+        return f'IgnoredException(reason={self.reason!r})'
 
 class PausedException(ProcessorException):
     '''指示 AnonBot 结束当前处理函数并等待下一条消息后运行下一个处理函数'''

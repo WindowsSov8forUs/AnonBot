@@ -91,7 +91,7 @@ class TrieRule:
                 has_arg = arg_str_stripped or msg
                 if (
                     has_arg
-                    and (stripped_len := len(arg_str) - len(arg_str_stripped)) >= 0
+                    and (stripped_len := len(arg_str) - len(arg_str_stripped)) > 0
                 ):
                     prefix[CMD_WHITESPACE_KEY] = arg_str[:stripped_len]
                 
@@ -355,7 +355,7 @@ class RegexRule:
             msg = event.get_message()
         except Exception:
             return False
-        if matched := re.search(self.regex, str(msg), self.flags):
+        if matched := re.search(self.regex, msg.extract_plain_text(), self.flags):
             state[REGEX_MATCHED] = matched
             return True
         else:

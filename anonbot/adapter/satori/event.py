@@ -5,13 +5,14 @@ from typing import TYPE_CHECKING, Any, Self, Type, Union, TypeVar, Optional
 
 from pydantic import model_validator
 
-from anonbot.log import link
+from anonbot.adapter import uni
 from anonbot.adapter import Event as BaseEvent
 
 from .element import parse
 from .models import Role, User
 from .models import Event as SatoriEvent
 from .message import Message, RenderMessage
+from .message import Button as ButtonMessage
 from .models import InnerMessage as SatoriMessage
 from .models import (
     Argv,
@@ -33,8 +34,7 @@ from .message import (
     Video,
     File,
     Author,
-    Quote,
-    Button as ButtonMessage
+    Quote
 )
 
 E = TypeVar('E', bound='Event')
@@ -111,6 +111,10 @@ class Event(BaseEvent, SatoriEvent):
         return self._data
     
     @override
+    def get_uni_message(self) -> uni.Message:
+        raise ValueError('Event has no message!')
+    
+    @override
     def get_type(self) -> Union[EventType, str]:
         return self.get_event_type()
     
@@ -134,10 +138,16 @@ class Event(BaseEvent, SatoriEvent):
     
     @override
     def get_session_id(self) -> str:
-        if self.channel:
-            if self.guild:
-                return f'{self.guild.id}:{self.channel.id}'
-            return self.channel.id
+        if self.user:
+            if self.channel:
+                if self.guild:
+                    return f'{self.guild.id}:{self.user.id}'
+                return f'{self.channel.id}:{self.user.id}'
+        else:
+            if self.channel:
+                return f'channel:{self.channel.id}'
+            elif self.guild:
+                return f'guild:{self.guild.id}'
         raise ValueError('Event has no context!')
     
     @override
@@ -160,7 +170,7 @@ class GuildEvent(Event):
     
     @override
     def get_session_id(self) -> str:
-        return self.guild.id
+        return f'guild:{self.guild.id}'
 
 @register_event_class
 class GuildAddedEvent(GuildEvent):
@@ -349,6 +359,46 @@ class MessageEvent(Event):
         return self.message
     
     @override
+    def get_uni_message(self) -> uni.Message:
+        return self._to_uni_message(self.get_message())
+    
+    @staticmethod
+    def _to_uni_message(message: Message) -> uni.Message:
+        msg = uni.Message()
+        for seg in message:
+            match seg.type:
+                case 'text':
+                    msg = msg.text(seg.data['text'])
+                case 'at':
+                    msg = msg.at(**seg.data)
+                case 'sharp':
+                    msg = msg.sharp(**seg.data)
+                case 'a':
+                    msg = msg.link(seg.data['href'])
+                case 'img':
+                    msg = msg.image(**seg.data)
+                case 'audio':
+                    msg = msg.audio(**seg.data)
+                case 'video':
+                    msg = msg.video(**seg.data)
+                case 'file':
+                    msg = msg.file(**seg.data)
+                case 'br':
+                    msg = msg.br()
+                case 'message':
+                    msg = msg.message(**seg.data)
+                case 'quote':
+                    msg = msg.quote(MessageEvent._to_uni_message(seg.data['content']))
+                case 'author':
+                    msg = msg.author(**seg.data)
+                case 'button':
+                    msg = msg.button(**seg.data)
+                case _:
+                    msg = msg.other(seg.type, **seg.data)
+        
+        return msg
+    
+    @override
     def get_user(self) -> User:
         return self.user
     
@@ -381,23 +431,28 @@ class MessageCreatedEvent(MessageEvent):
         # 添加来源信息
         from_infos = []
         user = self.get_user()
+        member = self.get_member()
         channel = self.get_channel()
         if guild := self.guild:
             if guild.id != channel.id:
                 from_infos.append(f'{guild.name}({guild.id})')
         if channel.type != ChannelType.DIRECT:
             from_infos.append(f'{channel.name}({channel.id})')
-        from_infos.append(f'{user.name}({user.id})')
+        from_infos.append(
+            f'{member.nick if member and member.nick else user.name}'
+            f'({user.id})'
+        )
         log_string += '-'.join(from_infos) + ': '
-        
         # 添加消息信息
         messages: list[str] = []
         for segment in self.original_message:
-            if isinstance(segment, (Text, A)):
+            if isinstance(segment, Text):
                 messages.append(segment.data['text'].replace('\r', ''))
+            elif isinstance(segment, A):
+                messages.append(segment.data['href'].replace('\r', ''))
             elif isinstance(segment, At):
                 if segment.data.get('type', None) is None and segment.data.get('role', None) is None:
-                    messages.append(f'@{segment.data.get("name", None)}({segment.data.get("id", None)}) ')
+                    messages.append(f'@{segment.data.get("name", "None")}({str(segment.data.get("id", 0))}) ')
                 elif segment.data.get('type', None) is not None:
                     if (type := segment.data.get('type', None)) != 'all':
                         messages.append(f'@{type} ')
@@ -420,7 +475,10 @@ class MessageCreatedEvent(MessageEvent):
             elif isinstance(segment, Author):
                 messages.append(f'[{segment.data.get("name", None)}({segment.data.get("id", None)})]')
             elif isinstance(segment, Quote):
-                messages.append(f'[回复] ')
+                _content = segment.data['content'].get('author', 1)
+                _seg = _content[0] if len(_content) > 0 else None
+                _author: Optional[Author] = _seg if isinstance(_seg, Author) else None
+                messages.append(f'[回复{_author.data["id"] if _author else ""}] ')
             elif isinstance(segment, ButtonMessage):
                 messages.append(f'[按钮]')
             else:
@@ -438,7 +496,7 @@ class MessageDeletedEvent(MessageEvent):
     __type__ = EventType.MESSAGE_DELETED
     
     @override
-    def get_event_description(self) -> str:
+    def get_log_string(self) -> str:
         user_info = f'{self.user.name}({self.user.id})'
         return f'{user_info}撤回了一条消息: {self.message_id}'
 
@@ -468,7 +526,10 @@ class ReactionEvent(Event):
     
     @override
     def get_session_id(self) -> str:
-        return f'{self.channel.id}:{self.get_user_id()}'
+        if self.guild:
+            return f'{self.guild.id}:{self.get_user_id()}'
+        else:
+            return f'{self.channel.id}:{self.get_user_id()}'
     
     @model_validator(mode='after')
     def generate_message(self) -> Self:
