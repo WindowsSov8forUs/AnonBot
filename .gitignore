@@ -2,6 +2,6 @@
 **/__pycache__/
 log/
 plugins*/
-config.yml
+config*.yml
 *test*
 bot*.py
