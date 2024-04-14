@@ -37,7 +37,7 @@ def _reload_module_by_recursion(module: ModuleType) -> None:
             sub_module_name = value.__module__
             if sub_module_name != module.__name__:
                 sub_module = sys.modules.get(sub_module_name)
-                if sub_module is not None and sub_module.__spec__ is not None:
+                if sub_module is not None and sub_module.__spec__ is not None and isinstance(sub_module.__spec__, ModuleSpec):
                     importlib.reload(sub_module)
                     if hasattr(sub_module, name):
                         module.__dict__[name] = getattr(sub_module, name)
