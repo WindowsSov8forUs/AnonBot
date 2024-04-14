@@ -2,6 +2,7 @@ import abc
 from copy import deepcopy
 from dataclasses import field, asdict, dataclass
 from typing import (
+    TYPE_CHECKING,
     Any,
     Self,
     Type,
@@ -23,6 +24,9 @@ from typing import (
 from pydantic import TypeAdapter
 
 from anonbot.utils import custom_validation
+
+if TYPE_CHECKING:
+    from .uni import Message as UniMessage
 
 TMS = TypeVar('TMS', bound='MessageSegment')
 TM = TypeVar('TM', bound='Message')
@@ -73,7 +77,7 @@ class MessageSegment(abc.ABC, Generic[TM]):
         return cls(type=value['type'], data=value.get('data', {}))
     
     def get(self, key: str, default: Any=None) -> Any:
-        return asdict(self).get(key, default)
+        return self.data.get(key, default)
     
     def keys(self) -> KeysView[Any]:
         return asdict(self).keys()
@@ -411,3 +415,16 @@ class Message(list[TMS], abc.ABC):
     def extract_plain_text(self) -> str:
         '''提取消息内纯文本消息'''
         return ''.join(map(str, filter(lambda x: x.is_text(), self)))
+
+    @staticmethod
+    @abc.abstractmethod
+    def parse_uni_message(uni_message: 'UniMessage') -> Iterable[TMS]:
+        '''解析 uni 消息
+
+        参数:
+            uni_message (uni.Message): uni 消息
+
+        返回:
+            Iterable[TMS]: 解析后的消息
+        '''
+        raise NotImplementedError

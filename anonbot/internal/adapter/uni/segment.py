@@ -5,7 +5,7 @@ from io import BytesIO
 from pathlib import Path
 from dataclasses import field, dataclass
 from typing_extensions import override
-from typing import TYPE_CHECKING, Any, NotRequired, Type, Union, Optional, TypedDict
+from typing import TYPE_CHECKING, Any, NotRequired, Self, Type, Union, Optional, TypedDict
 
 from anonbot.internal.adapter.message import MessageSegment as BaseMessageSegment
 
@@ -20,6 +20,9 @@ class SrcBase64(TypedDict):
     '''MIME 类型'''
 
 class MessageSegment(BaseMessageSegment['Message']):
+    children: Optional['Message']
+    '''子消息链'''
+    
     def __str__(self) -> str:
         attrs = ', '.join(f'{k}={v}' for k, v in self.data.items())
         if self.type == 'text' and 'text' in self.data:
@@ -40,6 +43,10 @@ class MessageSegment(BaseMessageSegment['Message']):
     @override
     def get_message_class(cls) -> Type['Message']:
         return Message
+    
+    def set_children(self, children: Optional['Message'] = None) -> Self:
+        self.children = children
+        return self
     
     @override
     def is_text(self) -> bool:
@@ -314,7 +321,6 @@ class Br(MessageSegment):
 class RenderMessageData(TypedDict):
     id: NotRequired[str]
     forward: NotRequired[bool]
-    content: NotRequired['Message']
 
 @dataclass
 class RenderMessage(MessageSegment):
@@ -333,14 +339,14 @@ class RenderMessage(MessageSegment):
         if forward is not None:
             self.data['forward'] = forward
         if content is not None:
-            self.data['content'] = self.get_message_class()(content)
+            self.set_children(self.get_message_class()(content))
     
     @override
     def __str__(self) -> str:
         return f'RenderMessage({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 class QuoteData(TypedDict):
-    content: 'Message'
+    pass
 
 @dataclass
 class Quote(MessageSegment):
@@ -348,7 +354,7 @@ class Quote(MessageSegment):
     
     def __init__(self, content: Union[str, MessageSegment, 'Message']) -> None:
         self.type = 'quote'
-        self.data: QuoteData = {'content': self.get_message_class()(content)}
+        self.set_children(self.get_message_class()(content))
     
     @override
     def __str__(self) -> str:
@@ -417,7 +423,15 @@ class Button(MessageSegment):
 class Other(MessageSegment):
     def __init__(self, type: str, **kwargs: Any) -> None:
         self.type = type
-        self.data = kwargs
+        data = {}
+        children = None
+        for key, value in kwargs.items():
+            if isinstance(value, (MessageSegment, Message)):
+                children = self.get_message_class()(children) + value
+            else:
+                data[key] = value
+        self.data = data
+        self.set_children(children)
     
     @override
     def __str__(self) -> str:

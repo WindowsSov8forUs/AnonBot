@@ -170,7 +170,7 @@ class Adapter(BaseAdapter):
             try:
                 event = self.payload_to_event(payload.body)
             except Exception as exception:
-                logger.warn(f'Failed to parse event payload: {payload}', exception)
+                logger.warn(f'Failed to parse event payload: {payload}', exception=exception)
             else:
                 if isinstance(event, LoginAddedEvent):
                     bot = Bot(self, event.self_id, event.platform, info)

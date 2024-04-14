@@ -18,7 +18,7 @@ from typing import (
     overload
 )
 
-from anonbot.adapter import SrcBase64
+from anonbot.adapter import SrcBase64, uni
 from anonbot.adapter import Message as BaseMessage
 from anonbot.adapter import MessageSegment as BaseMessageSegment
 
@@ -38,6 +38,9 @@ def _parse_src(src: Union[str, Path, SrcBase64]) -> str:
         return f'data:{src["type"]};base64,{b64encode(bytes_data).decode()}'
 
 class MessageSegment(BaseMessageSegment['Message']):
+    children: Optional['Message'] = None
+    '''消息段子消息'''
+    
     def __str__(self) -> str:
         def _attr(key: str, value: Any) -> str:
             if value is None:
@@ -45,14 +48,18 @@ class MessageSegment(BaseMessageSegment['Message']):
             key = param_case(key)
             if value is True:
                 return f' {key}'
-            if value is False:
-                return f' no-{key}'
-            return f' {key}="{escape(value, True)}"'
+            if isinstance(value, str):
+                return f' {key}="{escape(value, True)}"'
+            else:
+                return f' {key}="{escape(str(value), True)}"'
         
         attrs = ''.join(_attr(k, v) for k, v in self.data.items())
         if self.type == 'text' and 'text' in self.data:
             return escape(self.data['text'])
-        return f'<{self.type}{attrs}/>'
+        if self.children is None:
+            return f'<{self.type}{attrs}/>'
+        else:
+            return f'<{self.type}{attrs}>{str(self.children)}</{self.type}>'
     
     def __extra_attr__(self, *inner_attrs: str) -> str:
         def _attr(key: str, value: Any) -> str:
@@ -72,6 +79,10 @@ class MessageSegment(BaseMessageSegment['Message']):
     @override
     def get_message_class(cls) -> Type['Message']:
         return Message
+    
+    def set_children(self, children: Optional['Message'] = None) -> Self:
+        self.children = children
+        return self
     
     @staticmethod
     def text(text: str) -> 'Text':
@@ -288,15 +299,15 @@ class MessageSegment(BaseMessageSegment['Message']):
         if forward is not None:
             data['forward'] = forward
         if message:
-            data['content'] = Message(message)
-        return RenderMessage('message', data) # type: ignore
+            children = Message(message)
+        else:
+            children = None
+        return RenderMessage('message', data).set_children(children) # type: ignore
     
     @staticmethod
     def quote(content: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Quote':
-        data = {
-            'content': Message(content)
-        }
-        return Quote('quote', data) # type: ignore
+        children = Message(content)
+        return Quote('quote', {}).set_children(children) # type: ignore
     
     @staticmethod
     def author(
@@ -335,29 +346,15 @@ class MessageSegment(BaseMessageSegment['Message']):
         return Button('button', data) # type: ignore
     
     @staticmethod
-    def custom(type: str, **kwargs: Any) -> 'Custom':
-        return Custom(type, kwargs)
-    
-    @staticmethod
-    def passive(
-        id: Optional[str]=None,
-        seq: Optional[int]=None
-    ) -> 'Passive':
-        '''创建一个被动消息段
-
-        参数:
-            id (str, optional): 消息 ID
-            seq (int, optional): 消息序号
-
-        返回:
-            Passive: 被动消息段
-        '''
-        data: PassiveData = {}
-        if id is not None:
-            data['id'] = id
-        if seq is not None:
-            data['seq'] = seq
-        return Passive('passive', data)
+    def extend(type: str, **kwargs: Any) -> 'Extend':
+        data = {}
+        children = None
+        for key, value in kwargs.items():
+            if isinstance(value, (Message, MessageSegment)):
+                children = Message(children) + value
+            else:
+                data[key] = value
+        return Extend(type, data).set_children(children)
     
     @override
     def is_text(self) -> bool:
@@ -531,9 +528,6 @@ class File(MessageSegment):
             self.data.update(extra) # type: ignore
 
 class Br(MessageSegment):
-    @override
-    def __str__(self) -> str:
-        return f'<br{self.__extra_attr__()}/>'
     
     @override
     def is_text(self) -> bool:
@@ -548,29 +542,12 @@ class RenderMessageData(TypedDict):
 class RenderMessage(MessageSegment):
     data: RenderMessageData = field(default_factory=dict) # type: ignore
     
-    @override
-    def __str__(self) -> str:
-        attr = []
-        if 'id' in self.data:
-            attr.append(f' id="{escape(self.data["id"])}"')
-        if self.data.get('forward'):
-            attr.append(' forward')
-        _extra = self.__extra_attr__('id', 'forward', 'content')
-        if 'content' not in self.data:
-            return f'<{self.type}{"".join(attr)}{_extra}/>'
-        else:
-            return f'<{self.type}{"".join(attr)}{_extra}>{self.data["content"]}</{self.type}>'
-
 class QuoteData(TypedDict):
     content: 'Message'
 
 @dataclass
 class Quote(MessageSegment):
     data: QuoteData = field(default_factory=dict) # type: ignore
-    
-    @override
-    def __str__(self) -> str:
-        return f'<{self.type}{self.__extra_attr__("content")}>{self.data["content"]}</{self.type}>'
 
 class AuthorData(TypedDict):
     id: str
@@ -597,41 +574,13 @@ class PassiveData(TypedDict):
     seq: NotRequired[int]
 
 @dataclass
-class Passive(MessageSegment):
-    data: PassiveData = field(default_factory=dict) # type: ignore
-
-@dataclass
-class Custom(MessageSegment):
+class Extend(MessageSegment):
     data: dict[str, Any] = field(default_factory=dict)
     
     @override
-    def __str__(self) -> str:
-        def _attr(key: str, value: Any) -> str:
-            if value is None:
-                return ''
-            key = param_case(key)
-            if value is True:
-                return f' {key}'
-            if value is False:
-                return f' no-{key}'
-            return f' {key}="{escape(value, True)}"'
-        
-        if self.is_text():
-            return escape(self.data['text'])
-        _data: dict[str, Any] = {}
-        _children: list[Message] = []
-        for key, value in self.data.items():
-            if isinstance(value, Message):
-                _children.append(value)
-            else:
-                _data[key] = value
-        attrs = ''.join(_attr(k, v) for k, v in _data.items())
-        if len(_children) > 0:
-            return f'<{self.type}{attrs}>{"".join(str(child) for child in _children)}</{self.type}>'
-        return f'<{self.type}{attrs}/>'
-    
-    @override
     def is_text(self) -> bool:
+        if self.children:
+            return False
         if len(self.data) == 1:
             for value in self.data.values():
                 return isinstance(value, str)
@@ -667,12 +616,17 @@ STYLE_TYPE_MAP = {
 
 def handle(element: Element, upper_style: Optional[list[str]] = None) -> Generator[Any, None, None]:
     tag = element.tag()
+    if len(element.children) > 0:
+        print(len(element.children))
+        children = Message.from_satori_element(element.children)
+    else:
+        children = None
     if tag in ELEMENT_TYPE_MAP:
         seg_cls, seg_type = ELEMENT_TYPE_MAP[tag]
-        yield seg_cls(seg_type, element.attrs.copy())
+        yield seg_cls(seg_type, element.attrs.copy()).set_children(children)
     elif tag in ('a', 'link'):
         attrs = element.attrs.copy()
-        yield A('a', attrs | {'href': attrs.get('href', '')})
+        yield A('a', attrs | {'href': attrs.get('href', '')}).set_children(children)
     elif tag in STYLE_TYPE_MAP:
         style = STYLE_TYPE_MAP[tag]
         for child in element.children:
@@ -688,20 +642,16 @@ def handle(element: Element, upper_style: Optional[list[str]] = None) -> Generat
             else:
                 yield from handle(child, [*(upper_style or []), style])
     elif tag in ('br', 'newline'):
-        yield Br('br', {'text': '\n'})
+        yield Br('br', {'text': '\n'}).set_children(children)
     elif tag in ('message', 'quote'):
         data = element.attrs.copy()
-        if element.children:
-            data['content'] = Message.from_satori_element(element.children)
         if tag == 'message':
-            yield RenderMessage('message', data) # type: ignore
+            yield RenderMessage('message', data).set_children(children) # type: ignore
         else:
-            yield Quote('quote', data) # type: ignore
+            yield Quote('quote', data).set_children(children) # type: ignore
     else:
         data = element.attrs.copy()
-        if element.children:
-            data['content'] = Message.from_satori_element(element.children)
-        yield Custom(element.tag(), data)
+        yield Extend(element.tag(), data).set_children(children)
 
 class Message(BaseMessage[MessageSegment]):
     @classmethod
@@ -754,3 +704,42 @@ class Message(BaseMessage[MessageSegment]):
         self.clear()
         self.extend(result)
         return self
+
+    @staticmethod
+    @override
+    def parse_uni_message(uni_message: uni.Message) -> 'Message':
+        msg = Message()
+        for seg in uni_message:
+            match seg.type:
+                case 'text':
+                    msg += MessageSegment.text(seg.text)
+                case 'at':
+                    msg += MessageSegment.at(**seg.data)
+                case 'sharp':
+                    msg += MessageSegment.sharp(**seg.data)
+                case 'link':
+                    msg += MessageSegment.a(seg.href)
+                case 'image':
+                    msg += MessageSegment.img(**seg.data)
+                case 'audio':
+                    msg += MessageSegment.audio(**seg.data)
+                case 'video':
+                    msg += MessageSegment.video(**seg.data)
+                case 'file':
+                    msg += MessageSegment.file(**seg.data)
+                case 'style':
+                    msg += Text('text', {'text': seg.text, 'styles': {(0, len(seg.text)): [seg.style]}})
+                case 'br':
+                    msg += MessageSegment.br()
+                case 'message':
+                    msg += MessageSegment.message(**seg.data)
+                case 'quote':
+                    msg += MessageSegment.quote(Message.parse_uni_message(seg.content))
+                case 'author':
+                    msg += MessageSegment.author(**seg.data)
+                case 'button':
+                    msg += MessageSegment.button(**seg.data)
+                case _:
+                    msg += MessageSegment.extend(seg.type, **seg.data)
+        
+        return msg

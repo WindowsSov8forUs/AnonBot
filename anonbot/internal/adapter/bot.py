@@ -86,12 +86,6 @@ class Bot(abc.ABC):
         '''
         raise NotImplementedError
     
-    @staticmethod
-    @abc.abstractmethod
-    def parse_uni_message(uni_message: 'UniMessage') -> 'Message':
-        '''将统一消息转换为消息类'''
-        raise NotImplementedError
-    
     @abc.abstractmethod
     def channel_get(self, *, channel_id: str) -> Type[Channel]:
         '''获取群组频道'''

@@ -76,6 +76,11 @@ class Message(BaseMessage[MessageSegment]):
     def extract_plain_text(self) -> str:
         return ''.join(seg.data['text'] for seg in self if seg.is_text())
 
+    @staticmethod
+    @override
+    def parse_uni_message(uni_message: 'Message') -> 'Message':
+        return uni_message
+
     if TYPE_CHECKING:
         @classmethod
         def at(

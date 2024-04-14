@@ -4,8 +4,8 @@ from typing import TYPE_CHECKING, Any, Union, Optional
 
 from anonbot.adapter import uni
 from anonbot.message import handle_event
-from anonbot.driver import Request, Response
 from anonbot.adapter import Bot as BaseBot
+from anonbot.driver import Request, Response
 
 from .config import ClientInfo
 from .event import Event, MessageEvent
@@ -191,7 +191,7 @@ class Bot(BaseBot):
         if not event.channel:
             raise RuntimeError('Event cannot be replied to')
         if isinstance(message, uni.Message):
-            message = self.parse_uni_message(message)
+            message = Message.parse_uni_message(message)
         if reply:
             if (_message := event.get_message_data()) is not None:
                 message = MessageSegment.quote(_message.id) + message
@@ -200,48 +200,9 @@ class Bot(BaseBot):
                 message = MessageSegment.at(_operator.id) + message
         if passive:
             if (satori_msg := event.get_message_data()) is not None:
-                passive_seg = MessageSegment.passive(satori_msg.id, _seq(satori_msg.id))
+                passive_seg = MessageSegment.extend('qq:passive', id=satori_msg.id, seq=_seq(satori_msg.id)).set_children(Message('test'))
                 message = passive_seg + message
         return self.message_create(channel_id=event.channel.id, content=str(message))
-    
-    @override
-    @staticmethod
-    def parse_uni_message(uni_message: uni.Message) -> Message:
-        msg = Message()
-        for seg in uni_message:
-            match seg.type:
-                case 'text':
-                    msg += MessageSegment.text(seg.text)
-                case 'at':
-                    msg += MessageSegment.at(**seg.data)
-                case 'sharp':
-                    msg += MessageSegment.sharp(**seg.data)
-                case 'link':
-                    msg += MessageSegment.a(seg.href)
-                case 'image':
-                    msg += MessageSegment.img(**seg.data)
-                case 'audio':
-                    msg += MessageSegment.audio(**seg.data)
-                case 'video':
-                    msg += MessageSegment.video(**seg.data)
-                case 'file':
-                    msg += MessageSegment.file(**seg.data)
-                case 'style':
-                    msg += Text('text', {'text': seg.text, 'styles': {(0, len(seg.text)): [seg.style]}})
-                case 'br':
-                    msg += MessageSegment.br()
-                case 'message':
-                    msg += MessageSegment.message(**seg.data)
-                case 'quote':
-                    msg += MessageSegment.quote(Bot.parse_uni_message(seg.content))
-                case 'author':
-                    msg += MessageSegment.author(**seg.data)
-                case 'button':
-                    msg += MessageSegment.button(**seg.data)
-                case _:
-                    msg += MessageSegment.custom(seg.type, **seg.data)
-        
-        return msg
     
     @override
     def channel_get(self, *, channel_id: str) -> Channel:
