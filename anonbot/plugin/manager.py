@@ -1,5 +1,6 @@
 '''实现插件的加载、卸载与重载'''
 
+import os
 import sys
 import pkgutil
 import importlib
@@ -25,18 +26,21 @@ from . import (
     _module_name_to_plugin_name
 )
 
-def _reloadable(module: ModuleType) -> bool:
+def _reloadable(module: ModuleType, directory: str) -> bool:
     '''判断模块是否可重载'''
-    if not isinstance(module.__spec__, ModuleSpec):
+    if not hasattr(module, "__file__") or module.__file__ is None:
         return False
-    _loader = getattr(module, '__loader__', None)
-    if _loader is None:
+    _dir = os.path.dirname(os.path.abspath(directory))
+    module_path = os.path.dirname(os.path.abspath(module.__file__))
+    if os.path.splitdrive(module_path)[0] != os.path.splitdrive(_dir)[0]:
         return False
-    elif module.__name__ != '_frozen_importlib':
-        return False
-    elif isinstance(_loader, (_frozen_importlib.BuiltinImporter, _frozen_importlib.FrozenImporter)):
-        return False
-    return True
+    if os.path.commonpath([module_path, _dir]) == _dir:
+        # 说明模块在目标目录下
+        return True
+    elif os.path.dirname(module_path) == os.path.dirname(_dir):
+        # 说明模块在目标目录的父目录下
+        return True
+    return False
 
 def _reload_module_by_recursion(module: ModuleType, _loaded: Optional[set[ModuleType]] = None) -> None:
     '''递归重载模块
@@ -48,9 +52,11 @@ def _reload_module_by_recursion(module: ModuleType, _loaded: Optional[set[Module
     if module in _loaded:
         return
     _loaded.add(module)
+    if module.__file__ is None:
+        return
     for name, value in module.__dict__.items():
         if isinstance(value, ModuleType):
-            if value.__spec__ is not None:
+            if _reloadable(value, module.__file__):
                 importlib.reload(value)
                 _reload_module_by_recursion(value, _loaded)
         elif isinstance(value, (FunctionType, MethodType, type)):
@@ -59,11 +65,8 @@ def _reload_module_by_recursion(module: ModuleType, _loaded: Optional[set[Module
                 sub_module = sys.modules.get(sub_module_name)
                 if (
                     sub_module is not None
-                    and _reloadable(sub_module)
+                    and _reloadable(sub_module, module.__file__)
                 ):
-                    print(name)
-                    print(sub_module_name)
-                    print(sub_module)
                     importlib.reload(sub_module)
                     if hasattr(sub_module, name):
                         module.__dict__[name] = getattr(sub_module, name)
