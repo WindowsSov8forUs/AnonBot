@@ -13,6 +13,8 @@ from typing import Iterable, Optional, Sequence
 from anonbot.log import logger
 from anonbot.utils import path_to_module_name
 
+_frozen_importlib = sys.modules['_frozen_importlib']
+
 from .model import Plugin, PluginMetadata
 from . import (
     _managers,
@@ -23,21 +25,45 @@ from . import (
     _module_name_to_plugin_name
 )
 
-def _reload_module_by_recursion(module: ModuleType) -> None:
+def _reloadable(module: ModuleType) -> bool:
+    '''判断模块是否可重载'''
+    if not isinstance(module.__spec__, ModuleSpec):
+        return False
+    _loader = getattr(module, '__loader__', None)
+    if _loader is None:
+        return False
+    elif module.__name__ != '_frozen_importlib':
+        return False
+    elif isinstance(_loader, (_frozen_importlib.BuiltinImporter, _frozen_importlib.FrozenImporter)):
+        return False
+    return True
+
+def _reload_module_by_recursion(module: ModuleType, _loaded: Optional[set[ModuleType]] = None) -> None:
     '''递归重载模块
 
     递归重载模块及其子模块
     '''
+    if _loaded is None:
+        _loaded = set()
+    if module in _loaded:
+        return
+    _loaded.add(module)
     for name, value in module.__dict__.items():
         if isinstance(value, ModuleType):
             if value.__spec__ is not None:
                 importlib.reload(value)
-                _reload_module_by_recursion(value)
+                _reload_module_by_recursion(value, _loaded)
         elif isinstance(value, (FunctionType, MethodType, type)):
             sub_module_name = value.__module__
             if sub_module_name != module.__name__:
                 sub_module = sys.modules.get(sub_module_name)
-                if sub_module is not None and sub_module.__spec__ is not None and isinstance(sub_module.__spec__, ModuleSpec):
+                if (
+                    sub_module is not None
+                    and _reloadable(sub_module)
+                ):
+                    print(name)
+                    print(sub_module_name)
+                    print(sub_module)
                     importlib.reload(sub_module)
                     if hasattr(sub_module, name):
                         module.__dict__[name] = getattr(sub_module, name)
