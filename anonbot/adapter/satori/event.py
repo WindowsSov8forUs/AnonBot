@@ -10,8 +10,8 @@ from anonbot.adapter import Event as BaseEvent
 
 from .element import parse
 from .models import Role, User
+from .message import Message, Quote
 from .models import Event as SatoriEvent
-from .message import Message, RenderMessage
 from .message import Button as ButtonMessage
 from .models import InnerMessage as SatoriMessage
 from .models import (
@@ -308,7 +308,7 @@ class InteractionCommandArgvEvent(InteractionCommandEvent):
 class InteractionCommandMessageEvent(InteractionCommandEvent):
     message: SatoriMessage
     to_me: bool = False
-    reply: Optional[RenderMessage] = None
+    reply: Optional[Quote] = None
     
     @override
     def get_message_data(self) -> SatoriMessage:
@@ -344,7 +344,7 @@ class MessageEvent(Event):
     message: SatoriMessage
     user: User
     to_me: bool = False
-    reply: Optional[RenderMessage] = None
+    reply: Optional[Quote] = None
     
     if TYPE_CHECKING:
         _message: Message
@@ -475,9 +475,12 @@ class MessageCreatedEvent(MessageEvent):
             elif isinstance(segment, Author):
                 messages.append(f'[{segment.data.get("name", None)}({segment.data.get("id", None)})]')
             elif isinstance(segment, Quote):
-                _content = segment.data['content'].get('author', 1)
-                _seg = _content[0] if len(_content) > 0 else None
-                _author: Optional[Author] = _seg if isinstance(_seg, Author) else None
+                if segment.children is not None:
+                    _content = segment.children.get('author', 1)
+                    _seg = _content[0] if len(_content) > 0 else None
+                    _author: Optional[Author] = _seg if isinstance(_seg, Author) else None
+                else:
+                    _author = None
                 messages.append(f'[回复{_author.data["id"] if _author else ""}] ')
             elif isinstance(segment, ButtonMessage):
                 messages.append(f'[按钮]')

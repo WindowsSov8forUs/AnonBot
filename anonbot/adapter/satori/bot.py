@@ -9,8 +9,8 @@ from anonbot.driver import Request, Response
 
 from .config import ClientInfo
 from .event import Event, MessageEvent
+from .message import Message, MessageSegment
 from .models import InnerMessage as SatoriMessage
-from .message import Text, Message, MessageSegment
 from .models import Role, User, Guild, Login, Channel, Pagination, OuterMember
 from .exception import (
     ActionFailed,
@@ -40,7 +40,7 @@ def _check_reply(
     event: MessageEvent
 ) -> None:
     '''检查消息中存在的回复，赋值 `event.reply`，`event.to_me`'''
-    message = event.get_message()
+    message: Message = event.get_message()
     try:
         index = message.index('quote')
     except ValueError:
@@ -48,9 +48,11 @@ def _check_reply(
     
     msg_seg = message[index]
     event.reply = msg_seg # type: ignore
-    
-    author_msg = msg_seg.data['content'].get('author')
-    if author_msg:
+    if msg_seg.children is not None:
+        author_msg = msg_seg.children.get('author')
+    else:
+        author_msg = None
+    if author_msg is not None:
         author_seg = author_msg[0]
         event.to_me = author_seg.data.get('id') == bot.self_id
     
@@ -75,7 +77,7 @@ def _check_at_me(
     def _is_at_me_seg(segment: MessageSegment) -> bool:
         return segment.type == 'at' and segment.data.get('id') == str(bot.self_info.id)
     
-    message = event.get_message()
+    message: Message = event.get_message()
     
     if not message:
         message.append(MessageSegment.text(''))
