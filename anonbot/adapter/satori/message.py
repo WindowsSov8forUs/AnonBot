@@ -617,7 +617,6 @@ STYLE_TYPE_MAP = {
 def handle(element: Element, upper_style: Optional[list[str]] = None) -> Generator[Any, None, None]:
     tag = element.tag()
     if len(element.children) > 0:
-        print(len(element.children))
         children = Message.from_satori_element(element.children)
     else:
         children = None
