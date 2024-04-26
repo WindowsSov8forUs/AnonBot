@@ -5,3 +5,4 @@ plugins*/
 config*.yml
 *test*
 bot*.py
+venv/
