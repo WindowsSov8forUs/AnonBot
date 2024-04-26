@@ -20,7 +20,7 @@ class SrcBase64(TypedDict):
     '''MIME 类型'''
 
 class MessageSegment(BaseMessageSegment['Message']):
-    children: Optional['Message']
+    children: Optional['Message'] = None
     '''子消息链'''
     
     def __str__(self) -> str:
