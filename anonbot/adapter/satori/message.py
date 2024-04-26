@@ -713,32 +713,66 @@ class Message(BaseMessage[MessageSegment]):
                 case 'text':
                     msg += MessageSegment.text(seg.text)
                 case 'at':
-                    msg += MessageSegment.at(**seg.data)
+                    _seg = MessageSegment.at(**seg.data)
+                    if seg.children is not None:
+                        _seg.set_children(Message.parse_uni_message(seg.children))
+                    msg += _seg
                 case 'sharp':
-                    msg += MessageSegment.sharp(**seg.data)
+                    _seg = MessageSegment.sharp(**seg.data)
+                    if seg.children is not None:
+                        _seg.set_children(Message.parse_uni_message(seg.children))
+                    msg += _seg
                 case 'link':
-                    msg += MessageSegment.a(seg.href)
+                    _seg = MessageSegment.a(seg.href)
+                    if seg.children is not None:
+                        _seg.set_children(Message.parse_uni_message(seg.children))
+                    msg += _seg
                 case 'image':
-                    msg += MessageSegment.img(**seg.data)
+                    _seg = MessageSegment.img(**seg.data)
+                    if seg.children is not None:
+                        _seg.set_children(Message.parse_uni_message(seg.children))
+                    msg += _seg
                 case 'audio':
-                    msg += MessageSegment.audio(**seg.data)
+                    _seg = MessageSegment.audio(**seg.data)
+                    if seg.children is not None:
+                        _seg.set_children(Message.parse_uni_message(seg.children))
+                    msg += _seg
                 case 'video':
-                    msg += MessageSegment.video(**seg.data)
+                    _seg = MessageSegment.video(**seg.data)
+                    if seg.children is not None:
+                        _seg.set_children(Message.parse_uni_message(seg.children))
+                    msg += _seg
                 case 'file':
-                    msg += MessageSegment.file(**seg.data)
+                    _seg = MessageSegment.file(**seg.data)
+                    if seg.children is not None:
+                        _seg.set_children(Message.parse_uni_message(seg.children))
+                    msg += _seg
                 case 'style':
                     msg += Text('text', {'text': seg.text, 'styles': {(0, len(seg.text)): [seg.style]}})
                 case 'br':
                     msg += MessageSegment.br()
                 case 'message':
-                    msg += MessageSegment.message(**seg.data)
+                    if seg.children is not None:
+                        msg += MessageSegment.message(**seg.data, message=Message.parse_uni_message(seg.children))
+                    else:
+                        msg += MessageSegment.message(**seg.data)
                 case 'quote':
-                    msg += MessageSegment.quote(Message.parse_uni_message(seg.content))
+                    if seg.children is not None:
+                        msg += MessageSegment.quote(Message.parse_uni_message(seg.children))
                 case 'author':
-                    msg += MessageSegment.author(**seg.data)
+                    _seg = MessageSegment.author(**seg.data)
+                    if seg.children is not None:
+                        _seg.set_children(Message.parse_uni_message(seg.children))
+                    msg += _seg
                 case 'button':
-                    msg += MessageSegment.button(**seg.data)
+                    _seg = MessageSegment.button(**seg.data)
+                    if seg.children is not None:
+                        _seg.set_children(Message.parse_uni_message(seg.children))
+                    msg += _seg
                 case _:
-                    msg += MessageSegment.extend(seg.type, **seg.data)
+                    _seg = MessageSegment.extend(seg.type, **seg.data)
+                    if seg.children is not None:
+                        _seg.set_children(Message.parse_uni_message(seg.children))
+                    msg += _seg
         
         return msg

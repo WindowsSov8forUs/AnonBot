@@ -27,7 +27,14 @@ class MessageSegment(BaseMessageSegment['Message']):
         attrs = ', '.join(f'{k}={v}' for k, v in self.data.items())
         if self.type == 'text' and 'text' in self.data:
             return self.data['text']
-        return f'{self.type}({attrs})'
+        _type = self.type.capitalize() if self.type != 'message' else 'RenderMessage'
+        return (
+            f'{_type}('
+            + attrs
+            + (', ' if attrs != '' and self.children is not None else '')
+            + (f'children=[{str(self.children)}]' if self.children is not None else '')
+            + ')'
+        )
     
     def __getattr__(self, name: str):
         if name in self.data:
@@ -98,10 +105,6 @@ class At(MessageSegment):
             self.data['role'] = role
         if type is not None:
             self.data['type'] = type
-    
-    @override
-    def __str__(self) -> str:
-        return f'At({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 class SharpData(TypedDict):
     id: str
@@ -116,10 +119,6 @@ class Sharp(MessageSegment):
         self.data: SharpData = {'id': id}
         if name is not None:
             self.data['name'] = name
-    
-    @override
-    def __str__(self) -> str:
-        return f'Sharp({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 class LinkData(TypedDict):
     href: str
@@ -131,11 +130,7 @@ class Link(MessageSegment):
     def __init__(self, href: str) -> None:
         self.type = 'link'
         self.data: LinkData = {'href': href}
-    
-    @override
-    def __str__(self) -> str:
-        return self.data['href']
-    
+
     @override
     def is_text(self) -> bool:
         return True
@@ -175,10 +170,6 @@ class Image(MessageSegment):
             self.data['width'] = width
         if height is not None:
             self.data['height'] = height
-    
-    @override
-    def __str__(self) -> str:
-        return f'Image({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 class AudioData(SrcData, total=False):
     duration: NotRequired[float]
@@ -209,10 +200,6 @@ class Audio(MessageSegment):
             self.data['duration'] = duration
         if poster is not None:
             self.data['poster'] = poster
-    
-    @override
-    def __str__(self) -> str:
-        return f'Audio({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 class VideoData(SrcData, total=False):
     width: NotRequired[int]
@@ -251,10 +238,6 @@ class Video(MessageSegment):
             self.data['duration'] = duration
         if poster is not None:
             self.data['poster'] = poster
-    
-    @override
-    def __str__(self) -> str:
-        return f'Video({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 class FileData(SrcData, total=False):
     poster: NotRequired[str]
@@ -281,10 +264,6 @@ class File(MessageSegment):
             self.data['timeout'] = timeout
         if poster is not None:
             self.data['poster'] = poster
-    
-    @override
-    def __str__(self) -> str:
-        return f'File({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 class StyleData(TypedDict):
     text: str
@@ -297,11 +276,7 @@ class Style(MessageSegment):
     def __init__(self, text: str, style: str) -> None:
         self.type = 'style'
         self.data: StyleData = {'text': text, 'style': style}
-    
-    @override
-    def __str__(self) -> str:
-        return f'Style({", ".join(f"{k}={v}" for k, v in self.data.items())})'
-    
+
     @override
     def is_text(self) -> bool:
         return True
@@ -309,11 +284,7 @@ class Style(MessageSegment):
 class Br(MessageSegment):
     def __init__(self) -> None:
         self.type = 'br'
-    
-    @override
-    def __str__(self) -> str:
-        return 'Br()'
-    
+
     @override
     def is_text(self) -> bool:
         return True
@@ -340,10 +311,6 @@ class RenderMessage(MessageSegment):
             self.data['forward'] = forward
         if content is not None:
             self.set_children(self.get_message_class()(content))
-    
-    @override
-    def __str__(self) -> str:
-        return f'RenderMessage({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 class QuoteData(TypedDict):
     pass
@@ -355,10 +322,6 @@ class Quote(MessageSegment):
     def __init__(self, content: Union[str, MessageSegment, 'Message']) -> None:
         self.type = 'quote'
         self.set_children(self.get_message_class()(content))
-    
-    @override
-    def __str__(self) -> str:
-        return f'Quote({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 class AuthorData(TypedDict):
     id: NotRequired[str]
@@ -378,10 +341,6 @@ class Author(MessageSegment):
             self.data['name'] = name
         if avatar is not None:
             self.data['avatar'] = avatar
-    
-    @override
-    def __str__(self) -> str:
-        return f'Author({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 class ButtonData(TypedDict):
     id: NotRequired[str]
@@ -414,10 +373,6 @@ class Button(MessageSegment):
             self.data['text'] = text
         if theme is not None:
             self.data['theme'] = theme
-    
-    @override
-    def __str__(self) -> str:
-        return f'Button({", ".join(f"{k}={v}" for k, v in self.data.items())})'
 
 @dataclass
 class Other(MessageSegment):
@@ -432,7 +387,3 @@ class Other(MessageSegment):
                 data[key] = value
         self.data = data
         self.set_children(children)
-    
-    @override
-    def __str__(self) -> str:
-        return f'{self.type}({", ".join(f"{k}={v}" for k, v in self.data.items())})'

@@ -306,6 +306,18 @@ class Message(BaseMessage[MessageSegment]):
                 content (Optional[Message], optional): 子元素
             '''
             ...
+
+        @classmethod
+        def set_children(
+            cls_or_self: Union['Message', Type['Message']], # type: ignore
+            children: Union[str, MessageSegment, 'Message']
+        ) -> 'Message':
+            '''设置子元素
+
+            参数:
+                children (Union[str, MessageSegment, Message]): 子元素
+            '''
+            ...
     
     else:
         @chainedmethod
@@ -468,3 +480,14 @@ class Message(BaseMessage[MessageSegment]):
             if isinstance(cls_or_self, Message):
                 return cls_or_self.append(render_message)
             return Message(render_message)
+        
+        @chainedmethod
+        def set_children(
+            cls_or_self,
+            children: Union[str, MessageSegment, 'Message']
+        ) -> 'Message':
+            children = children if isinstance(children, Message) else Message(children)
+            if isinstance(cls_or_self, Message):
+                cls_or_self[-1].set_children(children)
+                return cls_or_self
+            raise ValueError('Cannot set children to an empty message.')
