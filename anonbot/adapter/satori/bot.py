@@ -200,7 +200,6 @@ class Bot(BaseBot):
                     id=_message.id,
                     message=_message.content
                 ) + message
-                print(message)
         elif at:
             if (_operator := event.get_operator()) is not None:
                 message = MessageSegment.at(_operator.id) + message
