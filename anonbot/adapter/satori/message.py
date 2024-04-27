@@ -101,6 +101,15 @@ class MessageSegment(BaseMessageSegment['Message']):
     def at(*,  type: Literal['all', 'here']) -> 'At': ...
     
     @staticmethod
+    @overload
+    def at(
+        id: Optional[str] = None,
+        name: Optional[str] = None,
+        role: Optional[str] = None,
+        type: Optional[str] = None
+    ) -> 'At': ...
+    
+    @staticmethod
     def at(
         id: Optional[str]=None,
         name: Optional[str]=None,
@@ -305,9 +314,21 @@ class MessageSegment(BaseMessageSegment['Message']):
         return RenderMessage('message', data).set_children(children) # type: ignore
     
     @staticmethod
-    def quote(content: Union[str, 'MessageSegment', Iterable['MessageSegment']]) -> 'Quote':
-        children = Message(content)
-        return Quote('quote', {}).set_children(children) # type: ignore
+    def quote(
+        id: Optional[str]=None,
+        forward: Optional[bool]=None,
+        message: Optional[Union[str, 'MessageSegment', Iterable['MessageSegment']]]=None
+    ) -> 'Quote':
+        data = {}
+        if id:
+            data['id'] = id
+        if forward is not None:
+            data['forward'] = forward
+        if message:
+            children = Message(message)
+        else:
+            children = None
+        return Quote('quote', data).set_children(children) # type: ignore
     
     @staticmethod
     def author(
@@ -536,14 +557,14 @@ class Br(MessageSegment):
 class RenderMessageData(TypedDict):
     id: NotRequired[str]
     forward: NotRequired[bool]
-    content: NotRequired['Message']
 
 @dataclass
 class RenderMessage(MessageSegment):
     data: RenderMessageData = field(default_factory=dict) # type: ignore
     
 class QuoteData(TypedDict):
-    content: 'Message'
+    id: NotRequired[str]
+    forward: NotRequired[bool]
 
 @dataclass
 class Quote(MessageSegment):
@@ -713,37 +734,78 @@ class Message(BaseMessage[MessageSegment]):
                 case 'text':
                     msg += MessageSegment.text(seg.text)
                 case 'at':
-                    _seg = MessageSegment.at(**seg.data)
+                    _seg = MessageSegment.at(
+                        id=seg.data.get('id', None),
+                        name=seg.data.get('name', None),
+                        role=seg.data.get('role', None),
+                        type=seg.data.get('type', None)
+                    )
+                    _seg.data = _seg.data | seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
                 case 'sharp':
-                    _seg = MessageSegment.sharp(**seg.data)
+                    _seg = MessageSegment.sharp(seg.data['id'], seg.data.get('name', None))
+                    _seg.data = _seg.data | seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
                 case 'link':
-                    _seg = MessageSegment.a(seg.href)
+                    _seg = MessageSegment.a(seg.data['href'])
+                    _seg.data = _seg.data | seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
                 case 'image':
-                    _seg = MessageSegment.img(**seg.data)
+                    _seg = MessageSegment.img(
+                        src=seg.data['src'],
+                        title=seg.data.get('title', None),
+                        cache=seg.data.get('cache', None),
+                        timeout=seg.data.get('timeout', None),
+                        width=seg.data.get('width', None),
+                        height=seg.data.get('height', None)
+                    )
+                    _seg.data = _seg.data | seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
                 case 'audio':
-                    _seg = MessageSegment.audio(**seg.data)
+                    _seg = MessageSegment.audio(
+                        src=seg.data['src'],
+                        title=seg.data.get('title', None),
+                        cache=seg.data.get('cache', None),
+                        timeout=seg.data.get('timeout', None),
+                        duration=seg.data.get('duration', None),
+                        poster=seg.data.get('poster', None)
+                    )
+                    _seg.data = _seg.data | seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
                 case 'video':
-                    _seg = MessageSegment.video(**seg.data)
+                    _seg = MessageSegment.video(
+                        src=seg.data['src'],
+                        title=seg.data.get('title', None),
+                        cache=seg.data.get('cache', None),
+                        timeout=seg.data.get('timeout', None),
+                        width=seg.data.get('width', None),
+                        height=seg.data.get('height', None),
+                        duration=seg.data.get('duration', None),
+                        poster=seg.data.get('poster', None)
+                    )
+                    _seg.data = _seg.data | seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
                 case 'file':
-                    _seg = MessageSegment.file(**seg.data)
+                    _seg = MessageSegment.file(
+                        src=seg.data['src'],
+                        title=seg.data.get('title', None),
+                        cache=seg.data.get('cache', None),
+                        timeout=seg.data.get('timeout', None),
+                        poster=seg.data.get('poster', None)
+                    )
+                    _seg.data = _seg.data | seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
@@ -752,25 +814,46 @@ class Message(BaseMessage[MessageSegment]):
                 case 'br':
                     msg += MessageSegment.br()
                 case 'message':
-                    if seg.children is not None:
-                        msg += MessageSegment.message(**seg.data, message=Message.parse_uni_message(seg.children))
-                    else:
-                        msg += MessageSegment.message(**seg.data)
+                    _seg = MessageSegment.message(
+                        id=seg.data.get('id', None),
+                        forward=seg.data.get('forward', None),
+                        message=Message.parse_uni_message(seg.children) if seg.children is not None else None
+                    )
+                    _seg.data = _seg.data | seg.data # type: ignore
+                    msg += _seg
                 case 'quote':
-                    if seg.children is not None:
-                        msg += MessageSegment.quote(Message.parse_uni_message(seg.children))
+                    _seg = MessageSegment.message(
+                        id=seg.data.get('id', None),
+                        forward=seg.data.get('forward', None),
+                        message=Message.parse_uni_message(seg.children) if seg.children is not None else None
+                    )
+                    _seg.data = _seg.data | seg.data # type: ignore
+                    msg += _seg
                 case 'author':
-                    _seg = MessageSegment.author(**seg.data)
+                    _seg = MessageSegment.author(
+                        id=seg.data['id'],
+                        name=seg.data.get('name', None),
+                        avatar=seg.data.get('avatar', None)
+                    )
+                    _seg.data = _seg.data | seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
                 case 'button':
-                    _seg = MessageSegment.button(**seg.data)
+                    _seg = MessageSegment.button(
+                        id=seg.data.get('id', None),
+                        type=seg.data.get('type', None),
+                        href=seg.data.get('href', None),
+                        text=seg.data.get('text', None),
+                        theme=seg.data.get('theme', None)
+                    )
+                    _seg.data = _seg.data | seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
                 case _:
-                    _seg = MessageSegment.extend(seg.type, **seg.data)
+                    _seg = MessageSegment.extend(seg.type)
+                    _seg.data = seg.data.copy()
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg

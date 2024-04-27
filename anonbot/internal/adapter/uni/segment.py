@@ -36,10 +36,10 @@ class MessageSegment(BaseMessageSegment['Message']):
             + ')'
         )
     
-    def __getattr__(self, name: str):
+    def __getattr__(self, name: str) -> Any:
         if name in self.data:
             return self.data[name]
-        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+        return None
     
     def __deepcopy__(self, memo: Any) -> 'MessageSegment':
         if type(self) is Other:
@@ -53,6 +53,10 @@ class MessageSegment(BaseMessageSegment['Message']):
     
     def set_children(self, children: Optional['Message'] = None) -> Self:
         self.children = children
+        return self
+    
+    def set_attr(self, key: str, value: Any) -> Self:
+        self.data[key] = value
         return self
     
     @override
@@ -313,15 +317,27 @@ class RenderMessage(MessageSegment):
             self.set_children(self.get_message_class()(content))
 
 class QuoteData(TypedDict):
-    pass
+    id: NotRequired[str]
+    forward: NotRequired[bool]
 
 @dataclass
 class Quote(MessageSegment):
     data: QuoteData = field(default_factory=dict) # type: ignore
     
-    def __init__(self, content: Union[str, MessageSegment, 'Message']) -> None:
-        self.type = 'quote'
-        self.set_children(self.get_message_class()(content))
+    def __init__(
+        self,
+        id: Optional[str] = None,
+        forward: Optional[bool] = None,
+        content: Optional[Union[str, MessageSegment, 'Message']] = None
+    ) -> None:
+        self.type = 'message'
+        self.data: QuoteData = {}
+        if id is not None:
+            self.data['id'] = id
+        if forward is not None:
+            self.data['forward'] = forward
+        if content is not None:
+            self.set_children(self.get_message_class()(content))
 
 class AuthorData(TypedDict):
     id: NotRequired[str]
@@ -378,12 +394,4 @@ class Button(MessageSegment):
 class Other(MessageSegment):
     def __init__(self, type: str, **kwargs: Any) -> None:
         self.type = type
-        data = {}
-        children = None
-        for key, value in kwargs.items():
-            if isinstance(value, (MessageSegment, Message)):
-                children = self.get_message_class()(children) + value
-            else:
-                data[key] = value
-        self.data = data
-        self.set_children(children)
+        self.data = kwargs

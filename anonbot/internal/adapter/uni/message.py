@@ -200,12 +200,16 @@ class Message(BaseMessage[MessageSegment]):
         @classmethod
         def quote(
             cls_or_self: Union['Message', Type['Message']], # type: ignore
-            content: Union[str, MessageSegment, 'Message']
+            id: Optional[str] = None,
+            forward: Optional[bool] = None,
+            content: Optional[Union[str, MessageSegment, 'Message']] = None
         ) -> 'Message':
             '''引用
 
             参数:
-                content (Message): 子元素
+                id (Optional[str], optional): 消息的 ID
+                forward (Optional[bool], optional): 是否为转发消息
+                content (Optional[Message], optional): 子元素
             '''
             ...
         
@@ -318,6 +322,20 @@ class Message(BaseMessage[MessageSegment]):
                 children (Union[str, MessageSegment, Message]): 子元素
             '''
             ...
+
+        @classmethod
+        def set_attr(
+            cls_or_self: Union['Message', Type['Message']], # type: ignore
+            key: str,
+            value: Any
+        ) -> 'Message':
+            '''设置扩展属性
+
+            参数:
+                key (str): 属性名
+                value (Any): 属性值
+            '''
+            ...
     
     else:
         @chainedmethod
@@ -406,8 +424,13 @@ class Message(BaseMessage[MessageSegment]):
             return Message(other)
         
         @chainedmethod
-        def quote(cls_or_self, content: Union[str, MessageSegment, 'Message']) -> 'Message':
-            quote = Quote(content)
+        def quote(
+            cls_or_self,
+            id: Optional[str] = None,
+            forward: Optional[bool] = None,
+            content: Optional[Union[str, MessageSegment, 'Message']] = None
+        ) -> 'Message':
+            quote = Quote(id, forward, content)
             if isinstance(cls_or_self, Message):
                 return cls_or_self.append(quote)
             return Message(quote)
@@ -491,3 +514,14 @@ class Message(BaseMessage[MessageSegment]):
                 cls_or_self[-1].set_children(children)
                 return cls_or_self
             raise ValueError('Cannot set children to an empty message.')
+
+        @chainedmethod
+        def set_attr(
+            cls_or_self,
+            key: str,
+            value: Any
+        ) -> 'Message':
+            if isinstance(cls_or_self, Message):
+                cls_or_self[-1].set_attr(key, value)
+                return cls_or_self
+            raise ValueError('Cannot set attribute to an empty message.')

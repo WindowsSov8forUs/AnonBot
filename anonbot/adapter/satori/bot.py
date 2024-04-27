@@ -196,7 +196,11 @@ class Bot(BaseBot):
             message = Message.parse_uni_message(message)
         if reply:
             if (_message := event.get_message_data()) is not None:
-                message = MessageSegment.quote(_message.id) + message
+                message = MessageSegment.quote(
+                    id=_message.id,
+                    message=_message.content
+                ) + message
+                print(message)
         elif at:
             if (_operator := event.get_operator()) is not None:
                 message = MessageSegment.at(_operator.id) + message
