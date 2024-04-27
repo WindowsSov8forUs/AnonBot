@@ -740,19 +740,19 @@ class Message(BaseMessage[MessageSegment]):
                         role=seg.data.get('role', None),
                         type=seg.data.get('type', None)
                     )
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
                 case 'sharp':
                     _seg = MessageSegment.sharp(seg.data['id'], seg.data.get('name', None))
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
                 case 'link':
                     _seg = MessageSegment.a(seg.data['href'])
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
@@ -765,7 +765,7 @@ class Message(BaseMessage[MessageSegment]):
                         width=seg.data.get('width', None),
                         height=seg.data.get('height', None)
                     )
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
@@ -778,7 +778,7 @@ class Message(BaseMessage[MessageSegment]):
                         duration=seg.data.get('duration', None),
                         poster=seg.data.get('poster', None)
                     )
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
@@ -793,7 +793,7 @@ class Message(BaseMessage[MessageSegment]):
                         duration=seg.data.get('duration', None),
                         poster=seg.data.get('poster', None)
                     )
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
@@ -805,7 +805,7 @@ class Message(BaseMessage[MessageSegment]):
                         timeout=seg.data.get('timeout', None),
                         poster=seg.data.get('poster', None)
                     )
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
@@ -819,7 +819,7 @@ class Message(BaseMessage[MessageSegment]):
                         forward=seg.data.get('forward', None),
                         message=Message.parse_uni_message(seg.children) if seg.children is not None else None
                     )
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     msg += _seg
                 case 'quote':
                     _seg = MessageSegment.message(
@@ -827,7 +827,7 @@ class Message(BaseMessage[MessageSegment]):
                         forward=seg.data.get('forward', None),
                         message=Message.parse_uni_message(seg.children) if seg.children is not None else None
                     )
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     msg += _seg
                 case 'author':
                     _seg = MessageSegment.author(
@@ -835,7 +835,7 @@ class Message(BaseMessage[MessageSegment]):
                         name=seg.data.get('name', None),
                         avatar=seg.data.get('avatar', None)
                     )
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
@@ -847,7 +847,7 @@ class Message(BaseMessage[MessageSegment]):
                         text=seg.data.get('text', None),
                         theme=seg.data.get('theme', None)
                     )
-                    _seg.data = _seg.data | seg.data # type: ignore
+                    _seg.data = seg.data | _seg.data # type: ignore
                     if seg.children is not None:
                         _seg.set_children(Message.parse_uni_message(seg.children))
                     msg += _seg
