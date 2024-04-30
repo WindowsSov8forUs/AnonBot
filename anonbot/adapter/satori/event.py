@@ -370,31 +370,67 @@ class MessageEvent(Event):
                 case 'text':
                     msg = msg.text(seg.data['text'])
                 case 'at':
-                    msg = msg.at(**seg.data)
+                    msg = msg.at()
+                    for key, value in seg.data.items():
+                        msg = msg.set_attr(key, value)
                 case 'sharp':
-                    msg = msg.sharp(**seg.data)
+                    msg = msg.sharp(seg.data['id'])
+                    for key, value in seg.data.items():
+                        if key != 'id':
+                            msg = msg.set_attr(key, value)
                 case 'a':
                     msg = msg.link(seg.data['href'])
+                    for key, value in seg.data.items():
+                        if key != 'href':
+                            msg = msg.set_attr(key, value)
                 case 'img':
-                    msg = msg.image(**seg.data)
+                    msg = msg.image(seg.data['src'])
+                    for key, value in seg.data.items():
+                        if key != 'src':
+                            msg = msg.set_attr(key, value)
                 case 'audio':
-                    msg = msg.audio(**seg.data)
+                    msg = msg.audio(seg.data['src'])
+                    for key, value in seg.data.items():
+                        if key != 'src':
+                            msg = msg.set_attr(key, value)
                 case 'video':
-                    msg = msg.video(**seg.data)
+                    msg = msg.video(seg.data['src'])
+                    for key, value in seg.data.items():
+                        if key != 'src':
+                            msg = msg.set_attr(key, value)
                 case 'file':
-                    msg = msg.file(**seg.data)
+                    msg = msg.file(seg.data['src'])
+                    for key, value in seg.data.items():
+                        if key != 'src':
+                            msg = msg.set_attr(key, value)
                 case 'br':
                     msg = msg.br()
+                    for key, value in seg.data.items():
+                        msg = msg.set_attr(key, value)
                 case 'message':
-                    msg = msg.message(**seg.data)
+                    msg = msg.message()
+                    for key, value in seg.data.items():
+                        msg = msg.set_attr(key, value)
                 case 'quote':
-                    msg = msg.quote(MessageEvent._to_uni_message(seg.data['content']))
+                    msg = msg.quote()
+                    for key, value in seg.data.items():
+                        msg = msg.set_attr(key, value)
                 case 'author':
-                    msg = msg.author(**seg.data)
+                    msg = msg.author()
+                    for key, value in seg.data.items():
+                        msg = msg.set_attr(key, value)
                 case 'button':
-                    msg = msg.button(**seg.data)
+                    msg = msg.button()
+                    for key, value in seg.data.items():
+                        msg = msg.set_attr(key, value)
                 case _:
-                    msg = msg.other(seg.type, **seg.data)
+                    msg = msg.other(seg.type)
+                    for key, value in seg.data.items():
+                        msg = msg.set_attr(key, value)
+            
+            if seg.children:
+                children = MessageEvent._to_uni_message(seg.children)
+                msg.set_children(children)
         
         return msg
     
@@ -463,13 +499,13 @@ class MessageCreatedEvent(MessageEvent):
             elif isinstance(segment, Sharp):
                 messages.append(f'#{segment.data.get("id", None)}({segment.data["id"]}) ')
             elif isinstance(segment, Img):
-                messages.append(f'[图片]{segment.data["src"]}')
+                messages.append(f'[图片]({segment.data["src"]})')
             elif isinstance(segment, Audio):
-                messages.append(f'[音频]{segment.data["src"]}')
+                messages.append(f'[音频]({segment.data["src"]})')
             elif isinstance(segment, Video):
-                messages.append(f'[视频]{segment.data["src"]}')
+                messages.append(f'[视频]({segment.data["src"]})')
             elif isinstance(segment, File):
-                messages.append(f'[文件]{segment.data["src"]}')
+                messages.append(f'[文件]({segment.data["src"]})')
             elif isinstance(segment, Message):
                 messages.append('[转发消息]')
             elif isinstance(segment, Author):
@@ -485,7 +521,7 @@ class MessageCreatedEvent(MessageEvent):
             elif isinstance(segment, ButtonMessage):
                 messages.append(f'[按钮]')
             else:
-                messages.append(str(segment))
+                messages.append(f'[{segment.type}]')
         log_string += ''.join(messages)
         
         return log_string
