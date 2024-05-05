@@ -81,6 +81,36 @@ class Message(BaseMessage[MessageSegment]):
     def parse_uni_message(uni_message: 'Message') -> 'Message':
         return uni_message
 
+    def select(self, type: Union[str, Type[MessageSegment]], count: Optional[int] = None) -> 'Message':
+        '''从消息段中递归选择特定类型消息片段
+
+        参数:
+            type (Union[str, Type[MessageSegment]]): 消息段类型
+            count (Optional[int], optional): 选择数量
+
+        返回:
+            Message: 选择的消息片段
+        '''
+        def _matcher(seg: MessageSegment) -> bool:
+            if isinstance(type, str):
+                return seg.type == type
+            return isinstance(seg, type)
+        
+        def _selecter(segments: Iterable[MessageSegment]) -> Iterable[MessageSegment]:
+            for seg in segments:
+                if _matcher(seg):
+                    yield seg
+                if seg.children:
+                    yield from _selecter(seg.children)
+        
+        result = Message()
+        for seg in _selecter(self):
+            result.append(seg)
+            if count is not None and len(result) >= count:
+                break
+        
+        return result
+    
     if TYPE_CHECKING:
         @classmethod
         def at(

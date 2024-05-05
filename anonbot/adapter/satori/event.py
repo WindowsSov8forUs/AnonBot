@@ -360,7 +360,7 @@ class MessageEvent(Event):
     
     @override
     def get_uni_message(self) -> uni.Message:
-        return self._to_uni_message(self.get_message())
+        return self._to_uni_message(self.original_message)
     
     @staticmethod
     def _to_uni_message(message: Message) -> uni.Message:
