@@ -23,15 +23,15 @@ from .event import (
 )
 from .models import (
     Opcode,
-    Payload,
+    Operation,
     Identify,
     LoginStatus,
-    PayloadType,
-    PingPayload,
-    PongPayload,
-    EventPayload,
-    ReadyPayload,
-    IdentifyPayload
+    OperationType,
+    PingOperation,
+    PongOperation,
+    EventOperation,
+    ReadyOperation,
+    IdentifyOperation
 )
 
 class Adapter(BaseAdapter):
@@ -74,35 +74,36 @@ class Adapter(BaseAdapter):
         )
     
     @staticmethod
-    def payload_to_json(payload: Payload) -> str:
-        return payload.model_dump_json(by_alias=True)
+    def operation_to_json(operation: Operation) -> str:
+        return operation.model_dump_json(by_alias=True)
     
-    def receive_payload(self, info: ClientInfo, ws: WebSocket) -> Payload:
-        payload: PayloadType = TypeAdapter(PayloadType).validate_python(json.loads(ws.receive())) # type: ignore
-        if isinstance(payload, EventPayload):
-            self.sequences[info.identity] = payload.body.id
-        return payload
+    def receive_operation(self, info: ClientInfo, ws: WebSocket) -> Operation:
+        operation_data = json.loads(ws.receive())
+        operation: OperationType = TypeAdapter(OperationType).validate_python(operation_data) # type: ignore
+        if isinstance(operation, EventOperation):
+            self.sequences[info.identity] = operation.body.id
+        return operation
     
     def _authenticate(self, info: ClientInfo, ws: WebSocket) -> Optional[Literal[True]]:
         '''鉴权连接'''
-        payload = IdentifyPayload(
+        operation = IdentifyOperation(
             op=Opcode.IDENTIFY,
             body=Identify(
                 token=info.token
             )
         )
         if info.identity in self.sequences:
-            payload.body.sequence = self.sequences[info.identity]
+            operation.body.sequence = self.sequences[info.identity]
         
         try:
-            ws.send(self.payload_to_json(payload))
+            ws.send(self.operation_to_json(operation))
         except Exception as exception:
-            logger.error(f'Error while sending Identify payload', exception=exception)
+            logger.error(f'Error while sending Identify operation', exception=exception)
             return
         
-        response = self.receive_payload(info, ws)
-        if not isinstance(response, ReadyPayload):
-            logger.error(f'Received unexpected payload: ', response)
+        response = self.receive_operation(info, ws)
+        if not isinstance(response, ReadyOperation):
+            logger.error(f'Received unexpected operation: ', response)
             return
         for login in response.body.logins:
             if not login.self_id:
@@ -125,11 +126,11 @@ class Adapter(BaseAdapter):
     def _heartbeat(self, info: ClientInfo, ws: WebSocket) -> None:
         '''心跳'''
         logger.trace(f'Heartbeat at {self.sequences.get(info.identity, None)}')
-        payload = PingPayload(op=Opcode.PING, body={})
+        operation = PingOperation(op=Opcode.PING, body={})
         try:
-            ws.send(self.payload_to_json(payload))
+            ws.send(self.operation_to_json(operation))
         except Exception as exception:
-            logger.warn(f'Error while sending Ping payload: ', exception)
+            logger.warn(f'Error while sending Ping operation: ', exception)
         threading.sleep(9)
     
     def ws(self, info: ClientInfo) -> None:
@@ -164,13 +165,13 @@ class Adapter(BaseAdapter):
     
     @threading.loop
     def _loop(self, info: ClientInfo, ws: WebSocket) -> None:
-        payload = self.receive_payload(info, ws)
-        logger.trace(f'Received payload: {repr(payload)}')
-        if isinstance(payload, EventPayload):
+        operation = self.receive_operation(info, ws)
+        logger.trace(f'Received operation: {repr(operation)}')
+        if isinstance(operation, EventOperation):
             try:
-                event = self.payload_to_event(payload.body)
+                event = self.operation_to_event(operation.body)
             except Exception as exception:
-                logger.warn(f'Failed to parse event payload: {payload}', exception=exception)
+                logger.warn(f'Failed to parse event operation: {operation}', exception=exception)
             else:
                 if isinstance(event, LoginAddedEvent):
                     bot = Bot(self, event.self_id, event.platform, info)
@@ -190,21 +191,21 @@ class Adapter(BaseAdapter):
                 if isinstance(event, InteractionCommandEvent):
                     event = event.convert()
                 threading.create_task(bot.handle_event, event)
-        elif isinstance(payload, PongPayload):
+        elif isinstance(operation, PongOperation):
             logger.trace('Pong')
             return
         else:
-            logger.warn(f'Unknown payload: {repr(payload)}')
+            logger.warn(f'Unknown operation: {repr(operation)}')
     
     @staticmethod
-    def payload_to_event(payload: SatoriEvent) -> Event:
-        EventClass = EVENT_CLASSES.get(payload.type, None)
+    def operation_to_event(operation: SatoriEvent) -> Event:
+        EventClass = EVENT_CLASSES.get(operation.type, None)
         if EventClass is None:
-            logger.warn(f'Unknown event type: {payload.type}')
-            event = Event.model_validate(payload)
-            event.__type__ = payload.type # type: ignore
+            logger.warn(f'Unknown event type: {operation.type}')
+            event = Event.model_validate(operation)
+            event.__type__ = operation.type # type: ignore
             return event
-        return EventClass.model_validate(payload.model_dump())
+        return EventClass.model_validate(operation.model_dump())
 
     @override
     def _call_api(self, bot: Bot, api: str, **data: Any) -> Any:

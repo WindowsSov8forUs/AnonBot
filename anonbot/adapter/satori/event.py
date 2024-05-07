@@ -162,7 +162,7 @@ def register_event_class(event_class: Type[E]) -> Type[E]:
     return event_class
 
 class GuildEvent(Event):
-    guild: Guild
+    guild: Guild # type: ignore
     
     @override
     def get_guild(self) -> Guild:
@@ -189,8 +189,8 @@ class GuildRequestEvent(GuildEvent):
     __type__ = EventType.GUILD_REQUEST
 
 class GuildMemberEvent(GuildEvent):
-    member: InnerMember
-    user: User
+    member: InnerMember # type: ignore
+    user: User # type: ignore
     
     @override
     def get_member(self) -> InnerMember:
@@ -225,7 +225,7 @@ class GuildMemberRequestEvent(GuildMemberEvent):
     __type__ = EventType.GUILD_MEMBER_REQUEST
 
 class GuildRoleEvent(GuildEvent):
-    role: Role
+    role: Role # type: ignore
     
     @override
     def get_role(self) -> Role:
@@ -256,7 +256,7 @@ class InteractionEvent(Event):
 class InteractionButtonEvent(InteractionEvent):
     __type__ = EventType.INTERACTION_BUTTON
     
-    button: Button
+    button: Button # type: ignore
     
     @override
     def get_button(self) -> Button:
@@ -285,7 +285,7 @@ class InteractionCommandEvent(InteractionEvent):
         return InteractionCommandMessageEvent.model_validate(self.model_dump()) # type: ignore
 
 class InteractionCommandArgvEvent(InteractionCommandEvent):
-    argv: Argv
+    argv: Argv # type: ignore
     
     @override
     def get_argv(self) -> Argv:
@@ -306,7 +306,7 @@ class InteractionCommandArgvEvent(InteractionCommandEvent):
         return self
 
 class InteractionCommandMessageEvent(InteractionCommandEvent):
-    message: SatoriMessage
+    message: SatoriMessage # type: ignore
     to_me: bool = False
     reply: Optional[Quote] = None
     
@@ -325,7 +325,7 @@ class InteractionCommandMessageEvent(InteractionCommandEvent):
         return self
 
 class LoginEvent(Event):
-    login: Login
+    login: Login # type: ignore
 
 @register_event_class
 class LoginAddedEvent(LoginEvent):
@@ -340,9 +340,9 @@ class LoginRemovedEvent(LoginEvent):
     __type__ = EventType.LOGIN_REMOVED
 
 class MessageEvent(Event):
-    channel: Channel
-    message: SatoriMessage
-    user: User
+    channel: Channel # type: ignore
+    message: SatoriMessage # type: ignore
+    user: User # type: ignore
     to_me: bool = False
     reply: Optional[Quote] = None
     
@@ -540,9 +540,9 @@ class MessageDeletedEvent(MessageEvent):
         return f'{user_info}撤回了一条消息: {self.message_id}'
 
 class ReactionEvent(Event):
-    channel: Channel
-    message: SatoriMessage
-    user: User
+    channel: Channel # type: ignore
+    message: SatoriMessage # type: ignore
+    user: User # type: ignore
     
     if TYPE_CHECKING:
         _message: Message

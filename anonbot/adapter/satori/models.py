@@ -25,8 +25,8 @@ class InnerMember(Member):
         return datetime.fromtimestamp(timestamp / 1000)
 
 class OuterMember(InnerMember):
-    user: 'User'
-    joined_at: datetime
+    user: 'User' # type: ignore
+    joined_at: datetime # type: ignore
 
 class InnerMessage(Message):
     
@@ -64,14 +64,14 @@ class InnerMessage(Message):
         return datetime.fromtimestamp(timestamp / 1000)
 
 class OuterMessage(InnerMessage):
-    channel: 'Channel'
-    guild: 'Guild'
-    user: 'User'
+    channel: 'Channel' # type: ignore
+    guild: 'Guild' # type: ignore
+    user: 'User' # type: ignore
 
 class OuterLogin(Login):
-    user: 'User'
-    self_id: str
-    platform: str
+    user: 'User' # type: ignore
+    self_id: str # type: ignore
+    platform: str # type: ignore
 
 class Event(BaseModel):
     id: int
@@ -110,7 +110,7 @@ class Opcode(IntEnum):
     IDENTIFY = 3
     READY = 4
 
-class Payload(BaseModel):
+class Operation(BaseModel):
     op: Opcode = Field(...)
     body: Optional[dict[str, Any]] = Field(None)
 
@@ -121,27 +121,27 @@ class Identify(BaseModel):
 class Ready(BaseModel):
     logins: list[OuterLogin]
 
-class IdentifyPayload(Payload):
+class IdentifyOperation(Operation):
     op: Literal[Opcode.IDENTIFY] = Field(Opcode.IDENTIFY)
     body: Identify
 
-class ReadyPayload(Payload):
+class ReadyOperation(Operation):
     op: Literal[Opcode.READY] = Field(Opcode.READY)
     body: Ready
 
-class PingPayload(Payload):
+class PingOperation(Operation):
     op: Literal[Opcode.PING] = Field(Opcode.PING)
 
-class PongPayload(Payload):
+class PongOperation(Operation):
     op: Literal[Opcode.PONG] = Field(Opcode.PONG)
 
-class EventPayload(Payload):
+class EventOperation(Operation):
     op: Literal[Opcode.EVENT] = Field(Opcode.EVENT)
     body: Event
 
-PayloadType = Union[
-    Union[IdentifyPayload, ReadyPayload, PingPayload, PongPayload, EventPayload],
-    Payload
+OperationType = Union[
+    Union[IdentifyOperation, ReadyOperation, PingOperation, PongOperation, EventOperation],
+    Operation
 ]
 
 from anonbot.adapter import (
