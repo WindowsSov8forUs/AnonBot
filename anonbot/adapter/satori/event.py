@@ -470,26 +470,33 @@ class MessageCreatedEvent(MessageEvent):
         user = self.get_user()
         member = self.get_member()
         channel = self.get_channel()
+        guild_avatar = self.guild.avatar if self.guild else None
         if guild := self.guild:
             if guild.id != channel.id:
                 from_infos.append(
                     link(
-                        text=color('darkblue')(f'{guild.name}({guild.id})'),
-                        url=guild.avatar
-                    ) if guild.avatar is not None
-                    else color('darkblue')(f'{guild.name}({guild.id})')
+                        text=color('#0037DA')(f'{guild.name}({guild.id})'),
+                        url=guild_avatar
+                    ) if guild_avatar is not None
+                    else color('#0037DA')(f'{guild.name}({guild.id})')
                 )
         if channel.type != ChannelType.DIRECT:
-            from_infos.append(f'{channel.name}({channel.id})')
+            from_infos.append(
+                link(
+                    text=color('#0037DA')(f'{channel.name}({channel.id})'),
+                    url=guild_avatar
+                ) if guild_avatar is not None
+                else color('#0037DA')(f'{channel.name}({channel.id})')
+            )
         from_infos.append(
             link(
-                text=color('skyblue')(
+                text=color('#3A96DD')(
                     f'{member.nick if member and member.nick else user.name}'
                     f'({user.id})'
                 ),
                 url=user.avatar
             ) if user.avatar is not None
-            else color('skyblue')(
+            else color('#3A96DD')(
                 f'{member.nick if member and member.nick else user.name}'
                 f'({user.id})'
             )
@@ -535,12 +542,13 @@ class MessageCreatedEvent(MessageEvent):
                     _author = None
                 _avatar = _author.data.get('avatar', None) if _author is not None else None
                 messages.append(
-                    link(
-                        color('gray')(f'[回复{_author.data["id"] if _author else ""}]'),
-                        _avatar
-                    ) if _avatar is not None
-                    else color('gray')(f'[回复{_author.data["id"] if _author else ""}]')
-                    + ' '
+                    (
+                        link(
+                            color('#767676')(f'[回复{_author.data["id"] if _author else ""}]'),
+                            _avatar
+                        ) if _avatar is not None
+                        else color('#767676')(f'[回复{_author.data["id"] if _author else ""}]')
+                    ) + ' '
                 )
             elif isinstance(segment, ButtonMessage):
                 messages.append(f'[按钮]')
