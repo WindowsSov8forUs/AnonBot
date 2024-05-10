@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Self, Type, Union, TypeVar, Optional
 from pydantic import model_validator
 
 from anonbot.adapter import uni
+from anonbot.log import link, color
 from anonbot.adapter import Event as BaseEvent
 
 from .element import parse
@@ -471,12 +472,27 @@ class MessageCreatedEvent(MessageEvent):
         channel = self.get_channel()
         if guild := self.guild:
             if guild.id != channel.id:
-                from_infos.append(f'{guild.name}({guild.id})')
+                from_infos.append(
+                    link(
+                        text=color('darkblue')(f'{guild.name}({guild.id})'),
+                        url=guild.avatar
+                    ) if guild.avatar is not None
+                    else color('darkblue')(f'{guild.name}({guild.id})')
+                )
         if channel.type != ChannelType.DIRECT:
             from_infos.append(f'{channel.name}({channel.id})')
         from_infos.append(
-            f'{member.nick if member and member.nick else user.name}'
-            f'({user.id})'
+            link(
+                text=color('skyblue')(
+                    f'{member.nick if member and member.nick else user.name}'
+                    f'({user.id})'
+                ),
+                url=user.avatar
+            ) if user.avatar is not None
+            else color('skyblue')(
+                f'{member.nick if member and member.nick else user.name}'
+                f'({user.id})'
+            )
         )
         log_string += '-'.join(from_infos) + ': '
         # 添加消息信息
@@ -499,13 +515,13 @@ class MessageCreatedEvent(MessageEvent):
             elif isinstance(segment, Sharp):
                 messages.append(f'#{segment.data.get("id", None)}({segment.data["id"]}) ')
             elif isinstance(segment, Img):
-                messages.append(f'[图片]({segment.data["src"]})')
+                messages.append(link('[图片]', segment.data['src']))
             elif isinstance(segment, Audio):
-                messages.append(f'[音频]({segment.data["src"]})')
+                messages.append(link('[音频]', segment.data['src']))
             elif isinstance(segment, Video):
-                messages.append(f'[视频]({segment.data["src"]})')
+                messages.append(link('[视频]', segment.data['src']))
             elif isinstance(segment, File):
-                messages.append(f'[文件]({segment.data["src"]})')
+                messages.append(link('[文件]', segment.data['src']))
             elif isinstance(segment, Message):
                 messages.append('[转发消息]')
             elif isinstance(segment, Author):
@@ -517,7 +533,15 @@ class MessageCreatedEvent(MessageEvent):
                     _author: Optional[Author] = _seg if isinstance(_seg, Author) else None
                 else:
                     _author = None
-                messages.append(f'[回复{_author.data["id"] if _author else ""}] ')
+                _avatar = _author.data.get('avatar', None) if _author is not None else None
+                messages.append(
+                    link(
+                        color('gray')(f'[回复{_author.data["id"] if _author else ""}]'),
+                        _avatar
+                    ) if _avatar is not None
+                    else color('gray')(f'[回复{_author.data["id"] if _author else ""}]')
+                    + ' '
+                )
             elif isinstance(segment, ButtonMessage):
                 messages.append(f'[按钮]')
             else:

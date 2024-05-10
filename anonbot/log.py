@@ -5,15 +5,24 @@ import inspect
 import logging
 from traceback import format_exception
 from datetime import datetime, timedelta
-from typing import Any, Union, TextIO, Optional
+from typing import Any, Union, TextIO, Callable, Optional
 
 from rich import print
 
 from .threading import Lock
 
+def link(text: str, url: str) -> str:
+    '''生成链接文本'''
+    return f'[link={url}]{text}[/link]'
+
+def color(color: str) -> Callable[[str], str]:
+    def _colored(text: str) -> str:
+        return f'[{color}]{text}[/{color}]'
+    return _colored
+
 console_log_format: str = (
-    '[gray]{time}[/gray] - '
-    '[cyan]{name}[/cyan] - '
+    f'{color("gray")("{time}")} - '
+    f'{color("cyan")("{name}")} - '
     '{level} - '
 )
 '''控制台文本格式'''
@@ -25,15 +34,15 @@ file_log_format: str = (
 )
 '''文件文本格式'''
 
-exception_log_format: str = '\n[red on black]{exception}[/red on black]'
+exception_log_format: str = f'\n{color("red on black")("{exception}")}'
 
 level_map = {
-    'TRACE': '[bold bright_green]TRACE[/bold bright_green]',
-    'DEBUG': '[bold bright_yellow]DEBUG[/bold bright_yellow]',
-    'INFO': '[bold bright_blue]INFO[/bold bright_blue]',
-    'WARN': '[bold yellow]WARN[/bold yellow]',
-    'ERROR': '[bold bright_red]ERROR[/bold bright_red]',
-    'FATAL': '[bold red]FATAL[/bold red]'
+    'TRACE': color('bold bright_green')('TRACE'),
+    'DEBUG': color('bold bright_yellow')('DEBUG'),
+    'INFO': color('bold bright_blue')('INFO'),
+    'WARN': color('bold yellow')('WARN'),
+    'ERROR': color('bold bright_red')('ERROR'),
+    'FATAL': color('bold red')('FATAL')
 }
 
 levels = {
@@ -46,14 +55,6 @@ levels = {
     'FATAL': 60,
     'OFF': 100
 }
-
-def link(text: str, url: str) -> str:
-    '''生成链接文本'''
-    return f'[link={url}]{text}[/link]'
-
-def colored(text: str, color: str) -> str:
-    '''生成颜色文本'''
-    return f'[{color}]{text}[/{color}]'
 
 def _get_time() -> str:
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -134,7 +135,7 @@ class Logger:
             time=time,
             level=level_map[level],
             name=name
-        ) + message
+        ) + color('white')(message)
         file_log = file_log_format.format(
             time=time,
             level=level,
