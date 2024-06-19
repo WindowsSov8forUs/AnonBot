@@ -37,9 +37,16 @@ class Mixin(HTTPClientMixin):
                 headers=tuple(setup.headers.items()),
                 timeout=setup.timeout
             )
+            try:
+                content = response.text
+                if content is None or content.strip() == "" :
+                    content = response.content
+            except Exception:
+                content = response.content
+            
             return Response(
                 response.status_code,
                 headers=response.headers.multi_items(),
-                content=response.content,
+                content=content,
                 request=setup
             )
